@@ -92,6 +92,14 @@ This project does not distribute the game files and does not link to any copy of
 Files obtained outside Steam come with no guarantee: scan them with your antivirus, and be wary of any
 copy that ships extra programs or asks for administrator rights.
 
+### Linux and Steam Deck (Proton) — prototype
+
+The mod is loaded through a `winhttp.dll` next to `Hex.exe`, and Proton ignores that file unless told otherwise. If you see a username/password form instead of the HEX Revival account list, the mod is not loaded.
+
+- Easiest: in Steam, HEX: Shards of Fate → Properties → Launch Options: `WINEDLLOVERRIDES="winhttp=n,b" %command%`, then start HEX from that entry (run `HexRevival.exe` once before, or copy the content of `mod` next to `Hex.exe`).
+- Or add `HexRevival.exe` to Steam as a non-Steam game, force Proton, and always start the game from it: the launcher sets the override itself under Wine/Proton.
+- Check: `BepInEx/LogOutput.log` appears next to `Hex.exe` once the mod loads.
+
 ### What the launcher does (and does not do)
 
 Its whole source is [`tools/launcher/HexRevivalLauncher.cs`](tools/launcher/HexRevivalLauncher.cs) (about 500 lines, half of it the translated messages).

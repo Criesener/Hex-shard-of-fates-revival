@@ -12,6 +12,7 @@
 // Transparency: the launcher does not use the network, reads the registry only to find Steam and
 // the game (and remembers the chosen folder there, HKCU\Software\HexRevival), copies the files of the "mod" folder shipped next to it into the game folder, and
 // asks for administrator rights only if that folder is protected, after the player agrees.
+// Under Wine / Proton (Linux, Steam Deck) it also tells Wine to load the mod's winhttp.dll (see Wine below).
 
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -242,7 +244,15 @@ namespace HexRevivalLauncher
                 if (!IsModUpToDate(game) && !InstallWithElevationIfNeeded(game))
                     return 1;
 
-                Process.Start(new ProcessStartInfo(Path.Combine(game, ExeName)) { WorkingDirectory = game, UseShellExecute = true });
+                if (Wine.IsWine())
+                {
+                    Wine.SetWinhttpOverride();
+                    ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(game, ExeName)) { WorkingDirectory = game, UseShellExecute = false };
+                    psi.EnvironmentVariables["WINEDLLOVERRIDES"] = Wine.WithWinhttp(psi.EnvironmentVariables["WINEDLLOVERRIDES"]);
+                    Process.Start(psi);
+                }
+                else
+                    Process.Start(new ProcessStartInfo(Path.Combine(game, ExeName)) { WorkingDirectory = game, UseShellExecute = true });
                 return 0;
             }
             catch (Exception e)
@@ -506,6 +516,51 @@ namespace HexRevivalLauncher
             {
                 MessageBox.Show(T("remove_failed") + e.Message, Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+    }
+
+    /// <summary>
+    /// Wine / Proton (Linux, Steam Deck). The mod is loaded by BepInEx through a winhttp.dll placed next to Hex.exe,
+    /// but Wine uses its own built-in winhttp and ignores that file unless told otherwise: the game then starts
+    /// without the mod and shows the original login form, which waits for the official servers.
+    /// The launcher sets the override in the Wine prefix it runs in (HKCU\Software\Wine\DllOverrides, as winecfg does)
+    /// and in the environment of the game it starts. A HEX started from its own Steam entry runs in another prefix:
+    /// it needs the launch option WINEDLLOVERRIDES="winhttp=n,b" %command%.
+    /// PROTOTYPE (branch prototype-linux-proton): not tested on Linux yet.
+    /// </summary>
+    internal static class Wine
+    {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string name);
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi)] private static extern IntPtr GetProcAddress(IntPtr module, string name);
+
+        public static bool IsWine()
+        {
+            try
+            {
+                // Wine's ntdll exports wine_get_version; Windows' does not.
+                IntPtr ntdll = GetModuleHandle("ntdll.dll");
+                if (ntdll != IntPtr.Zero && GetProcAddress(ntdll, "wine_get_version") != IntPtr.Zero) return true;
+            }
+            catch { }
+            try { using (RegistryKey k = Registry.LocalMachine.OpenSubKey("Software\\Wine")) return k != null; }
+            catch { return false; }
+        }
+
+        public static void SetWinhttpOverride()
+        {
+            try { Registry.SetValue("HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides", "winhttp", "native,builtin"); }
+            catch { }
+        }
+
+        /// <summary>An existing WINEDLLOVERRIDES value with winhttp=n,b added (or replacing a winhttp entry).</summary>
+        public static string WithWinhttp(string current)
+        {
+            List<string> parts = new List<string>();
+            if (!string.IsNullOrEmpty(current))
+                foreach (string p in current.Split(';'))
+                    if (p.Trim().Length > 0 && !Regex.IsMatch(p.Trim(), "^winhttp(\\.dll)?\\s*=", RegexOptions.IgnoreCase)) parts.Add(p.Trim());
+            parts.Add("winhttp=n,b");
+            return string.Join(";", parts.ToArray());
         }
     }
 }
