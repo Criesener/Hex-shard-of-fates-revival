@@ -7,13 +7,14 @@ namespace HexRevival
 {
     /// <summary>
     /// A Full Set's bundle buttons (user 2026-11-02).
-    /// - With "Additional items in the store": its variants (Store.VariantCount) in place of QTY 1, 3 and 10: PvP, PvE,
-    ///   PvP+PvE, and PvP+PvE x4 on a 4th button, a copy of the QTY 10 one placed under the row. The store's item context
-    ///   keeps a quantity of 1; its cost and name follow the variant chosen, so the BUY total, the money check and the
+    /// - With "Additional items in the store": its variants (Store.VariantCount) on two rows in place of QTY 1, 3 and
+    ///   10: PvP, PvE, PvP+PvE, and the same x4 on a second row of copies of the three buttons, as far below as the
+    ///   buttons are apart; the description panel under them is shortened by that row. The store's item context keeps a
+    ///   quantity of 1; its cost and name follow the variant chosen, so the BUY total, the money check and the
     ///   confirmation read it (UIPremiumStoreItemContext.TotalCost, CheckIfValidPurchase, OnBuyClicked); the purchase
     ///   delivers the variant (Store.PurchaseItem).
-    /// - Without: QTY 1 and 4 only (Store.FullSetQuantity): the QTY 3 button reads 4 and buys 4 (MapQuantity, on the
-    ///   store's SetQuantity), the QTY 10 one is hidden.
+    /// - Without: QTY 1, 2 and 4 (Store.FullSetQuantity): the QTY 3 button reads and buys 2, the QTY 10 one 4
+    ///   (MapQuantity, on the store's SetQuantity).
     /// The buttons' labels are rewritten every frame (the game's bindings set them back), and put back when another
     /// product is selected. The other products keep their quantities.
     /// </summary>
@@ -21,15 +22,19 @@ namespace HexRevival
     {
         private const string Widget = "Panel_R/Panel_Overlay/Frame_Buy_Widget/";
         private static readonly string[] Buttons = { "Button_Bundle_1", "Button_Bundle_3", "Button_Bundle_10" };
-        private const string FourthName = "Button_Bundle_Variant4";
+        /// <summary>The quantities of the Full Sets' buttons without the variants.</summary>
+        private static readonly int[] FullSetQuantities = { 1, 2, 4 };
 
         private UIPremiumStoreViewModel m_Store;
         private float m_NextFind;
         private int m_Pending = -1;
-        /// <summary>The 4th button (a copy of the QTY 10 one), made once per store.</summary>
-        private GameObject m_Fourth;
-        /// <summary>The QTY 10 button, hidden while a Full Set sells by 1 or 4.</summary>
-        private GameObject m_Hidden;
+        /// <summary>The second row (copies of the three buttons), made once per store.</summary>
+        private GameObject[] m_Row2;
+        /// <summary>The description panel under the buttons: its height and place before it was shortened (null: as the game has it).</summary>
+        private UIWidget m_Inset;
+        private int m_InsetHeight;
+        private Vector3 m_InsetPos;
+        private bool m_InsetShort;
         private readonly HashSet<GameObject> m_Listening = new HashSet<GameObject>();
         /// <summary>Labels rewritten, with their text before (put back when the variants are left).</summary>
         private readonly Dictionary<UILabel, string> m_Changed = new Dictionary<UILabel, string>();
@@ -38,7 +43,7 @@ namespace HexRevival
         private readonly Dictionary<UIPremiumStoreItemContext, string> m_Renamed = new Dictionary<UIPremiumStoreItemContext, string>();
         private readonly Dictionary<UIPremiumStoreItemContext, int> m_Costs = new Dictionary<UIPremiumStoreItemContext, int>();
 
-        /// <summary>UIPremiumStoreViewModel.SetQuantity prefix: a Full Set's quantity, 1 or 4 (or 1 with the variants).</summary>
+        /// <summary>UIPremiumStoreViewModel.SetQuantity prefix: a Full Set's quantity, 1, 2 or 4 (or 1 with the variants).</summary>
         public static int MapQuantity(UIPremiumStoreViewModel store, int quantity)
         {
             try
@@ -59,7 +64,7 @@ namespace HexRevival
             if (m_Store == null || !m_Store.isActiveAndEnabled)
             {
                 m_Changed.Clear(); m_Colors.Clear(); m_Renamed.Clear(); m_Costs.Clear(); m_Listening.Clear();
-                if (m_Store == null) { m_Fourth = null; m_Hidden = null; }
+                if (m_Store == null) { m_Row2 = null; m_Inset = null; m_InsetShort = false; }
                 return;
             }
             UIPremiumStoreItemContext ctx = null;
@@ -67,18 +72,17 @@ namespace HexRevival
             InventoryItemData item = ctx != null ? ctx.ItemData : null;
             int[] prices;
             InventoryItemData pve;
-            if (item != null && Store.Variants(item, out prices, out pve) && prices != null) { Show(false); ShowVariants(ctx, item, prices); return; }
+            if (item != null && Store.Variants(item, out prices, out pve) && prices != null) { ShowVariants(ctx, item, prices); return; }
             m_Pending = -1;
-            Fourth(false);
-            if (item != null && SpecialPacks.KindOf(item) == "fullset") { Restore(ctx); Show(true); ShowOneOrFour(ctx); return; }
-            Show(false);
+            Row2(false);
+            if (item != null && SpecialPacks.KindOf(item) == "fullset") { Restore(ctx); ShowQuantities(ctx); return; }
             Restore(null);
         }
 
         private void ShowVariants(UIPremiumStoreItemContext ctx, InventoryItemData item, int[] prices)
         {
             Restore(ctx);
-            Fourth(true);
+            Row2(true);
             Listen();
             if (m_Pending >= 0) { Store.SetVariant(item, m_Pending); m_Pending = -1; }
             int v = Store.VariantOf(item);
@@ -87,17 +91,18 @@ namespace HexRevival
             if (!m_Renamed.ContainsKey(ctx)) { m_Renamed[ctx] = ctx.Name; m_Costs[ctx] = prices[0]; }
             string name = Store.VariantName(item, v);
             if (ctx.Name != name) ctx.Name = name;
+            string both = Loc.Get("variant_both"), pve = Loc.Get("variant_pve");
+            string head = both.EndsWith(pve) ? both.Substring(0, both.Length - pve.Length) : both;
             for (int k = 0; k < Store.VariantCount; k++)
             {
                 Transform b = Button(k);
                 b = b != null ? b.Find("Labels_Bundle") : null;
                 if (b == null) continue;
                 // The number's label shrinks what is wider than a number: "PvP+PvE" is split, its "PvP+" in the "Qty:"
-                // label's place (x4: "PvP+PvE" there, "x4" as the number).
-                string both = Loc.Get("variant_both"), pve = Loc.Get("variant_pve");
-                string head = both.EndsWith(pve) ? both.Substring(0, both.Length - pve.Length) : both;
-                UILabel qty = Set(b.Find("Label_Quantity"), k == 2 ? head : k == 3 ? both + " " : "");
-                UILabel packs = Set(b.Find("Label_Packs"), k == 2 ? pve : k == 3 ? "x4" : Loc.Get(Store.VariantKeys[k]));
+                // label's place; on the x4 row the name takes that place and "x4" is the number.
+                string kind = Loc.Get(Store.VariantKeys[k % 3]);
+                UILabel qty = Set(b.Find("Label_Quantity"), k >= 3 ? kind + " " : k == 2 ? head : "");
+                UILabel packs = Set(b.Find("Label_Packs"), k >= 3 ? "x4" : k == 2 ? pve : kind);
                 Set(b.Find("Label_Cost"), prices[k].ToString());
                 // The chosen variant in gold, the others as the game draws them.
                 foreach (UILabel l in new[] { qty, packs })
@@ -109,59 +114,128 @@ namespace HexRevival
             }
         }
 
-        /// <summary>A Full Set without the variants: QTY 1 and 4, the 3 button standing for 4.</summary>
-        private void ShowOneOrFour(UIPremiumStoreItemContext ctx)
+        /// <summary>A Full Set without the variants: QTY 1, 2 and 4 on the game's 1, 3 and 10 buttons.</summary>
+        private void ShowQuantities(UIPremiumStoreItemContext ctx)
         {
             int q = Store.FullSetQuantity(ctx.ItemData, ctx.Quantity);
             if (ctx.Quantity != q) ctx.Quantity = q;
-            Transform b = Button(1);
-            b = b != null ? b.Find("Labels_Bundle") : null;
-            if (b == null) return;
-            Set(b.Find("Label_Packs"), "4");
-            Set(b.Find("Label_Cost"), (ctx.Cost * 4).ToString());
+            for (int k = 1; k < Buttons.Length; k++)
+            {
+                Transform b = Button(k);
+                b = b != null ? b.Find("Labels_Bundle") : null;
+                if (b == null) continue;
+                Set(b.Find("Label_Packs"), FullSetQuantities[k].ToString());
+                Set(b.Find("Label_Cost"), (ctx.Cost * FullSetQuantities[k]).ToString());
+            }
         }
 
-        /// <summary>The bundle button k (3: the 4th one).</summary>
+        /// <summary>The bundle button k (3 to 5: the second row's).</summary>
         private Transform Button(int k)
         {
-            if (k == 3) return m_Fourth != null ? m_Fourth.transform : null;
+            if (k >= 3) return m_Row2 != null && m_Row2[k - 3] != null ? m_Row2[k - 3].transform : null;
             return m_Store.transform.Find(Widget + Buttons[k]);
         }
 
-        /// <summary>The 4th button, made (a copy of the QTY 10 one, placed under the QTY 3 one) or hidden.</summary>
-        private void Fourth(bool show)
+        /// <summary>The second row, made (copies of the three buttons, as far below them as they are apart) or hidden;
+        /// the description panel under the buttons shortened by the row, or put back.</summary>
+        private void Row2(bool show)
         {
-            if (!show) { if (m_Fourth != null && m_Fourth.activeSelf) m_Fourth.SetActive(false); return; }
-            if (m_Fourth == null)
+            if (!show)
             {
-                Transform ten = m_Store.transform.Find(Widget + Buttons[2]);
-                Transform three = m_Store.transform.Find(Widget + Buttons[1]);
-                if (ten == null || three == null) return;
-                m_Fourth = Instantiate(ten.gameObject, ten.parent, false);
-                m_Fourth.name = FourthName;
-                // Its own place: anchors off (they would put it back over the QTY 10 button), then under the row.
-                foreach (UIRect r in m_Fourth.GetComponentsInChildren<UIRect>(true))
-                    if (AnchoredOutside(r, m_Fourth.transform)) r.SetAnchor((Transform)null);
-                Bounds bb = NGUIMath.CalculateRelativeWidgetBounds(three);
-                m_Fourth.transform.localPosition = three.localPosition + new Vector3(0f, -(bb.size.y + 12f), 0f);
+                if (m_Row2 != null) foreach (GameObject g in m_Row2) if (g != null && g.activeSelf) g.SetActive(false);
+                Inset(0);
+                return;
             }
-            if (!m_Fourth.activeSelf) m_Fourth.SetActive(true);
+            float step = 0f;
+            if (m_Row2 == null)
+            {
+                Transform a = m_Store.transform.Find(Widget + Buttons[0]), b = m_Store.transform.Find(Widget + Buttons[1]);
+                UIWidget w = a != null ? a.GetComponent<UIWidget>() : null;
+                if (w == null || b == null) return;
+                float gap = Mathf.Abs(b.localPosition.x - a.localPosition.x) - w.width;
+                step = w.height + Mathf.Max(gap, 0f);
+                m_Row2 = new GameObject[Buttons.Length];
+                for (int k = 0; k < Buttons.Length; k++)
+                {
+                    Transform src = m_Store.transform.Find(Widget + Buttons[k]);
+                    if (src == null) continue;
+                    GameObject g = Instantiate(src.gameObject, src.parent, false);
+                    g.name = Buttons[k] + "_x4";
+                    // Its own place: anchors off (they would put it back over the button copied), then a row lower.
+                    foreach (UIRect r in g.GetComponentsInChildren<UIRect>(true))
+                        if (AnchoredOutside(r, g.transform)) r.SetAnchor((Transform)null);
+                    g.transform.localPosition = src.localPosition + new Vector3(0f, -step, 0f);
+                    m_Row2[k] = g;
+                }
+                m_Step = step;
+            }
+            foreach (GameObject g in m_Row2) if (g != null && !g.activeSelf) g.SetActive(true);
+            Inset(m_Step);
         }
+
+        private float m_Step;
+
+        /// <summary>The description panel under the buttons, its top lowered by by (0: as the game has it). Its bottom stays.</summary>
+        private void Inset(float by)
+        {
+            if (m_Inset == null)
+            {
+                Transform t = m_Store.transform.Find(Widget + "Inset_Desc");
+                m_Inset = t != null ? t.GetComponent<UIWidget>() : null;
+                if (m_Inset == null) return;
+            }
+            if (by <= 0f)
+            {
+                if (!m_InsetShort) return;
+                m_InsetShort = false;
+                if (m_Inset.topAnchor.target != null) { m_Inset.topAnchor.absolute += m_InsetLowered; m_Inset.ResetAndUpdateAnchors(); }
+                else { m_Inset.height = m_InsetHeight; m_Inset.transform.localPosition = m_InsetPos; }
+                KeepButtons(-m_InsetLowered);
+                return;
+            }
+            if (m_InsetShort) return;
+            m_InsetShort = true;
+            int d = Mathf.RoundToInt(by);
+            m_InsetLowered = d;
+            if (m_Inset.topAnchor.target != null) { m_Inset.topAnchor.absolute -= d; m_Inset.ResetAndUpdateAnchors(); }
+            else
+            {
+                m_InsetHeight = m_Inset.height;
+                m_InsetPos = m_Inset.transform.localPosition;
+                // The height shrinks around the pivot: moved down by the part of it above the pivot, so the bottom stays.
+                m_Inset.height = m_InsetHeight - d;
+                m_Inset.transform.localPosition = m_InsetPos + new Vector3(0f, -d * m_Inset.pivotOffset.y, 0f);
+            }
+            KeepButtons(d);
+        }
+
+        /// <summary>
+        /// The game's buttons are anchored to the panel's top: their anchors on it raised by by (lowered back with -by), so
+        /// they stay where they were when the panel's top moves.
+        /// </summary>
+        private void KeepButtons(int by)
+        {
+            foreach (string name in Buttons)
+            {
+                Transform b = m_Store.transform.Find(Widget + name);
+                if (b == null) continue;
+                foreach (UIRect r in b.GetComponentsInChildren<UIRect>(true))
+                {
+                    bool moved = false;
+                    foreach (UIRect.AnchorPoint a in new[] { r.bottomAnchor, r.topAnchor })
+                        if (a != null && a.target == m_Inset.transform && a.relative > 0.5f) { a.absolute += by; moved = true; }
+                    if (moved) r.ResetAndUpdateAnchors();
+                }
+            }
+        }
+
+        private int m_InsetLowered;
 
         private static bool AnchoredOutside(UIRect r, Transform root)
         {
             foreach (UIRect.AnchorPoint a in new[] { r.leftAnchor, r.rightAnchor, r.bottomAnchor, r.topAnchor })
                 if (a != null && a.target != null && !a.target.IsChildOf(root)) return true;
             return false;
-        }
-
-        /// <summary>Hides the QTY 10 button (a Full Set sold by 1 or 4), or shows it again.</summary>
-        private void Show(bool hideTen)
-        {
-            Transform ten = m_Store.transform.Find(Widget + Buttons[2]);
-            if (ten == null) return;
-            if (hideTen && ten.gameObject.activeSelf) { m_Hidden = ten.gameObject; ten.gameObject.SetActive(false); }
-            else if (!hideTen && m_Hidden != null) { m_Hidden.SetActive(true); m_Hidden = null; }
         }
 
         /// <summary>A click on a bundle button: its variant (applied next frame, after the game set its quantity).</summary>

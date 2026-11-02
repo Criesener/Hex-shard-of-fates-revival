@@ -818,6 +818,9 @@ namespace HexRevival
             return Store.Variants(item, out prices, out pve) ? Store.VariantName(item, Store.VariantOf(item)) : item.m_Name.Trim();
         }
 
+        /// <summary>The copies a Full Set variant gives (1, or 4 for x4): its Details' texts; 4 for the PvE package sold alone.</summary>
+        private static int s_Copies = 4;
+
         private static Contents Describe(InventoryItemData item)
         {
             int[] prices;
@@ -825,8 +828,9 @@ namespace HexRevival
             if (Store.Variants(item, out prices, out pve))
             {
                 int v = Store.VariantOf(item);
-                if (v == 1) return Describe(pve, null);
-                if (v >= 2) return Describe(item, pve);   // PvP+PvE, also x4 (the same things, 4 Full Sets)
+                s_Copies = v >= 3 ? 4 : 1;
+                try { return Store.FullSetsOf(v) == 0 ? Describe(pve, null) : Describe(item, Store.PveCopiesOf(v) > 0 ? pve : null); }
+                finally { s_Copies = 4; }
             }
             return Describe(item, null);
         }
@@ -898,7 +902,7 @@ namespace HexRevival
             if (pve != null)
             {
                 // PveFullSets.Deliver: every item once (what is owned already is not given again), the cards up to 4 copies.
-                Group g = G(c, Loc.Get("g_pvefullset"), Loc.Get("n_pvefullset"));
+                Group g = G(c, Loc.Get("g_pvefullset"), Loc.Get(s_Copies == 1 ? "n_pvefullset1" : "n_pvefullset"));
                 g.Pools.Add(new Pool { Title = Loc.Get("pc_pve_cards"), Cards = Sorted(PveFullSets.Cards(pve)), Once = true, Counted = true });
                 g.Pools.Add(new Pool { Title = Loc.Get("pc_mercenaries"), Items = SortedItems(PveFullSets.Mercs(pve).ConvertAll(m => (InventoryItemData)m)), Once = true });
                 g.Pools.Add(new Pool { Title = Loc.Get("pc_sleeves"), Items = SortedItems(PveFullSets.SetSleeves(pve).ConvertAll(s => (InventoryItemData)s)), Once = true });
@@ -985,7 +989,7 @@ namespace HexRevival
                 case "fullset":
                 {
                     if (set == null) return false;
-                    Group g = G(c, Loc.Get("g_fullset"));
+                    Group g = G(c, Loc.Get(Store.FullSetsOf(Store.VariantOf(item)) == 4 ? "g_fullset4" : "g_fullset"));
                     foreach (ERarity r in new[] { ERarity.Legendary, ERarity.Epic, ERarity.Rare, ERarity.Uncommon, ERarity.Common })
                     {
                         List<CardTemplate> pool = Progression.Pool(set, r);

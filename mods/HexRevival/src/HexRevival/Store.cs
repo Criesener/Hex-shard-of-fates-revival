@@ -54,13 +54,19 @@ namespace HexRevival
 
         // ------------------------------------------------------------------
         // Full Set variants (user 2026-11-02): with the additional items, a Full Set's bundle buttons choose PvP (the
-        // Full Set), PvE (the set's PvE full set, PveFullSets), both, or both with 4 Full Sets, in place of 1, 3 or 10
-        // copies (StoreVariants). Without them, a Full Set sells by 1 or 4 (FullSetQuantity).
+        // Full Set), PvE (the set's PvE full set, PveFullSets) or both, once or x4, on two rows in place of 1, 3 or 10
+        // copies (StoreVariants). Without them, a Full Set sells by 1, 2 or 4 (FullSetQuantity).
         // ------------------------------------------------------------------
 
-        /// <summary>The variants: 0 PvP, 1 PvE, 2 PvP+PvE, 3 PvP+PvE x4 (4 Full Sets and the PvE package, whose cards come
-        /// up to 4 copies already).</summary>
-        public const int VariantCount = 4;
+        /// <summary>
+        /// The variants: 0 PvP, 1 PvE, 2 PvP+PvE, then the same x4 (3 to 5): 4 Full Sets, and the PvE package with 4
+        /// copies of its cards in place of 1 (its equipment, mercenaries and sleeves are unique: once either way).
+        /// </summary>
+        public const int VariantCount = 6;
+
+        /// <summary>A variant's Full Sets (PvP copies) and copies of the PvE package's cards.</summary>
+        public static int FullSetsOf(int variant) { return variant % 3 == 1 ? 0 : variant >= 3 ? 4 : 1; }
+        public static int PveCopiesOf(int variant) { return variant % 3 == 0 ? 0 : variant >= 3 ? 4 : 1; }
 
         /// <summary>The variant chosen per Full Set item.</summary>
         private static readonly Dictionary<ResourceId, int> s_Variant = new Dictionary<ResourceId, int>();
@@ -86,25 +92,24 @@ namespace HexRevival
         /// <summary>"Shards of Fate Full Set (PvE)".</summary>
         public static string VariantName(InventoryItemData item, int v)
         {
-            return Loc.Get("fullset_variant", item.m_Name.Trim(), Loc.Get(VariantKeys[Mathf.Clamp(v, 0, VariantCount - 1)]));
+            v = Mathf.Clamp(v, 0, VariantCount - 1);
+            string kind = Loc.Get(VariantKeys[v % 3]);
+            return Loc.Get("fullset_variant", item.m_Name.Trim(), v >= 3 ? Loc.Get("variant_x4", kind) : kind);
         }
 
-        /// <summary>The variants' names (Loc keys).</summary>
-        public static readonly string[] VariantKeys = { "variant_pvp", "variant_pve", "variant_both", "variant_both4" };
-
-        /// <summary>Full Sets PvP copies delivered by a variant.</summary>
-        private static int FullSetsOf(int variant) { return variant == 1 ? 0 : variant == 3 ? 4 : 1; }
+        /// <summary>The variants' kinds (Loc keys), the x4 ones (3 to 5) as the first three.</summary>
+        public static readonly string[] VariantKeys = { "variant_pvp", "variant_pve", "variant_both" };
 
         /// <summary>
-        /// The copies of a Full Set sold without the variants (user 2026-11-02): 1 or 4, the game's 3 standing for 4 (and
-        /// its 10, hidden, too). Other products keep their quantity.
+        /// The copies of a Full Set sold without the variants (user 2026-11-02): 1, 2 or 4, the game's 3 standing for 2
+        /// and its 10 for 4. Other products keep their quantity.
         /// </summary>
         public static int FullSetQuantity(InventoryItemData item, int quantity)
         {
             if (SpecialPacks.KindOf(item) != "fullset") return quantity;
             int[] prices; InventoryItemData pve;
             if (Variants(item, out prices, out pve)) return 1;
-            return quantity <= 1 ? 1 : 4;
+            return quantity <= 1 ? 1 : quantity <= 3 ? 2 : 4;
         }
 
         private static readonly Dictionary<ulong, Product> s_Products = new Dictionary<ulong, Product>();
@@ -252,10 +257,9 @@ namespace HexRevival
                 else if (p.Currency == "Gold") p.Price = GoldOfPlatinum(PlatinumOf(p.Price));
                 if (p.Pve != null)
                 {
-                    // The variants' prices, converted as the Full Set's (PvE: the PvE full set's price; x4: four Full
-                    // Sets and one PvE package, which already gives up to 4 copies of its cards).
-                    int full = SpecialPacks.GoldPrice("fullset");
-                    int[] raw = { full, PveFullSets.GoldPrice, full + PveFullSets.GoldPrice, 4 * full + PveFullSets.GoldPrice };
+                    // The variants' prices, converted as the Full Set's (PvE: the PvE full set's price; x4: 4 times).
+                    int full = SpecialPacks.GoldPrice("fullset"), once = PveFullSets.GoldPrice;
+                    int[] raw = { full, once, full + once, 4 * full, 4 * once, 4 * (full + once) };
                     p.VariantPrices = new int[VariantCount];
                     for (int k = 0; k < VariantCount; k++)
                         p.VariantPrices[k] = p.Currency == "Platinum" ? PlatinumOf(raw[k]) : GoldOfPlatinum(PlatinumOf(raw[k]));
@@ -394,7 +398,7 @@ namespace HexRevival
                     for (int i = 0; i < quantity; i++)
                     {
                         for (int k = 0; k < FullSetsOf(variant); k++) Deliver(p.Item, r);
-                        if (variant != 0) Deliver(p.Pve, r);
+                        if (PveCopiesOf(variant) > 0) PveFullSets.Deliver(PveFullSets.SetOf(p.Pve), r, PveCopiesOf(variant));
                     }
                     Debug.Log("[HexRevival] [Store] bought " + quantity + " x " + p.Item.m_Name + " for " + cost + " " + currency);
                 }
@@ -501,7 +505,7 @@ namespace HexRevival
                 return;
             }
             CardSetTemplate pveSet = PveFullSets.SetOf(item);
-            if (pveSet != null) { PveFullSets.Deliver(pveSet, r); return; }
+            if (pveSet != null) { PveFullSets.Deliver(pveSet, r, Collection.CopiesPerCard); return; }
             if (SpecialPacks.Deliver(item, r)) return;
             InventoryCardPack pack = item as InventoryCardPack;
             if (pack != null)
