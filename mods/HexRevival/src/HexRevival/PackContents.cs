@@ -38,6 +38,12 @@ namespace HexRevival
             public List<CardTemplate> Cards;
             public List<InventoryItemData> Items;
             public Dictionary<ResourceId, int> Copies;   // a deck: how many of each card
+            /// <summary>
+            /// A campaign pack's part (Loot.Describe): each card or item has its own chance per try (Prob), and the tries
+            /// happen with their own chances (Tries: {1, 1} two cards, {1, 2/3} an equipment and maybe a second one).
+            /// </summary>
+            public Dictionary<object, float> Prob;
+            public float[] Tries;
             public int Count { get { return Cards != null ? Cards.Count : Items != null ? Items.Count : 0; } }
 
             /// <summary>One card's or item's chance per pack (Once: everything is given).</summary>
@@ -52,9 +58,26 @@ namespace HexRevival
                 }
             }
 
+            /// <summary>One card's or item's chance per pack, for weighted pools its own.</summary>
+            public float EachOf(object o)
+            {
+                float p;
+                if (Prob == null || !Prob.TryGetValue(o, out p)) return Each;
+                float none = 1f;
+                foreach (float t in Tries) none *= 1f - t * p;
+                return 1f - none;
+            }
+
+            /// <summary>A weighted pool's chance per try of one card or item.</summary>
+            public float PerTry(object o)
+            {
+                float p;
+                return Prob != null && Prob.TryGetValue(o, out p) ? p : Chance / Math.Max(1, Count);
+            }
+
             /// <summary>Several cards from this pool per pack: each one's chance is shown with the number of tries (the user,
             /// 2026-10-31: "12 times 0.73% (8.42% chances to get at least one)"); implicit for one.</summary>
-            public bool Repeats { get { return !Once && Draws > 1 && Count > 1; } }
+            public bool Repeats { get { return !Once && (Prob != null ? Tries.Length > 1 && Array.TrueForAll(Tries, t => t >= 1f) : Draws > 1) && Count > 1; } }
         }
 
         private class Group
@@ -77,6 +100,7 @@ namespace HexRevival
         private UIPremiumStoreViewModel m_Store;
         private float m_NextFind;
         private InventoryItemData m_Checked;
+        private int m_CheckedVariant;
         private Contents m_CheckedContents;
         private Rect m_BarRect, m_LastFrame;
         private readonly Controls.UiBlocker m_Block = new Controls.UiBlocker();
@@ -170,7 +194,8 @@ namespace HexRevival
                 return;
             }
             InventoryItemData item = Selected();
-            if (item != m_Checked) { m_Checked = item; m_CheckedContents = item != null ? Describe(item) : null; }
+            int variant = Store.VariantOf(item);
+            if (item != m_Checked || variant != m_CheckedVariant) { m_Checked = item; m_CheckedVariant = variant; m_CheckedContents = item != null ? Describe(item) : null; }
             // The game's card count (and its Details button) hidden: the mod's bar takes its place for every product.
             Transform frame = m_Store.transform.Find("Panel_R/Panel_Overlay/Frame_Details");
             UIWidget fw = frame != null ? frame.GetComponent<UIWidget>() : null;
@@ -272,7 +297,7 @@ namespace HexRevival
 
         private void DrawWindow(float S)
         {
-            Rect win = Controls.Window(1080, 880, Loc.Get("pc_details_title", m_Item.m_Name.Trim()));
+            Rect win = Controls.Window(1080, 880, Loc.Get("pc_details_title", Title(m_Item)));
             float pad = 34 * S;
             GameSkin.Label(new Rect(win.x + pad, win.y + 50 * S, win.width - 2 * pad, 28 * S), Stats(m_Contents), GameSkin.Style("bold", 17, GameSkin.Gold, TextAnchor.MiddleCenter));
             Rect area = new Rect(win.x + pad, win.y + 84 * S, win.width - 2 * pad, win.height - 168 * S);
@@ -366,7 +391,7 @@ namespace HexRevival
                             Rect tile = new Rect(x0 + i * (TileW + TileGap) * S, r.Y, TileW * S, r.Height);
                             object o = r.Pool.Cards != null ? (object)r.Pool.Cards[r.Start + i] : r.Pool.Items[r.Start + i];
                             if (o is CardTemplate) CardTile(tile, (CardTemplate)o, r.Pool, S);
-                            else ItemTile(tile, (InventoryItemData)o, visible, S);
+                            else ItemTile(tile, (InventoryItemData)o, r.Pool, visible, S);
                             // A right click: the detail panel (a left click on a card does nothing either).
                             Event e = Event.current;
                             if (interactive && e.type == EventType.MouseDown && e.button == 1 && tile.Contains(e.mousePosition)) { detail(o, r.Pool); e.Use(); }
@@ -380,6 +405,16 @@ namespace HexRevival
         private static string PoolRate(Pool p)
         {
             if (p.Once) return Loc.Get("r_all");
+            if (p.Prob != null)
+            {
+                // A campaign pack's part: how many tries, then each card's own chance (on its tile).
+                int sure = 0;
+                foreach (float t in p.Tries) if (t >= 1f) sure++;
+                string tries = sure == p.Tries.Length ? Loc.Get("r_draws", sure)
+                    : sure == 0 ? Rate(p.Tries[0])
+                    : Loc.Get("r_draws_or", sure, p.Tries.Length);
+                return Loc.Get("r_own", tries);
+            }
             string head = p.Draws > 1 ? Loc.Get("r_draws", p.Draws) : Rate(p.Chance);
             if (p.Count <= 1) return head;
             // Several draws: each draw's chance, and the chance to get it at least once.
@@ -393,11 +428,12 @@ namespace HexRevival
             int n = Collection.Count(c.m_Id), copies;
             string owned = Loc.Get("pc_owned", n);
             if (p.Copies != null && p.Copies.TryGetValue(c.m_Id, out copies)) owned = "x" + copies + "  ·  " + owned;
+            if (p.Prob != null) owned = Rate(p.EachOf(c)) + "  ·  " + owned;
             GUI.Label(new Rect(tile.x, card.yMax, tile.width, 20 * S), owned,
                 n > 0 ? GameSkin.Style("bold", 12, GameSkin.Gold, TextAnchor.MiddleCenter) : GameSkin.Style("body", 12, GameSkin.Muted, TextAnchor.MiddleCenter));
         }
 
-        private static void ItemTile(Rect tile, InventoryItemData it, Rect clip, float S)
+        private static void ItemTile(Rect tile, InventoryItemData it, Pool p, Rect clip, float S)
         {
             GameSkin.Sprite(tile, "A_Frames", "Frame_Inner");
             float pic = tile.width - 30 * S;
@@ -414,7 +450,7 @@ namespace HexRevival
             string second = Second(it);
             if (second != null) GUI.Label(new Rect(tile.x + 4 * S, y, tile.width - 8 * S, 30 * S), second, GameSkin.Style("body", 11, GameSkin.Text, TextAnchor.UpperCenter, true));
             int n = Inventory.Count(it.m_Id);
-            GUI.Label(new Rect(tile.x, tile.yMax - 20 * S, tile.width, 18 * S), Loc.Get("pc_owned", n),
+            GUI.Label(new Rect(tile.x, tile.yMax - 20 * S, tile.width, 18 * S), (p.Prob != null ? Rate(p.EachOf(it)) + "  ·  " : "") + Loc.Get("pc_owned", n),
                 n > 0 ? GameSkin.Style("bold", 12, GameSkin.Gold, TextAnchor.MiddleCenter) : GameSkin.Style("body", 12, GameSkin.Muted, TextAnchor.MiddleCenter));
         }
 
@@ -537,8 +573,8 @@ namespace HexRevival
             }
             if (m_DetailPool != null && !m_DetailPool.Once)
                 body += "\n" + (m_DetailPool.Repeats
-                    ? Loc.Get("d_drop_multi", m_DetailPool.Title, m_DetailPool.Draws, Rate(m_DetailPool.Chance / Math.Max(1, m_DetailPool.Count)), Rate(m_DetailPool.Each))
-                    : Loc.Get("d_drop", m_DetailPool.Title, Rate(m_DetailPool.Each)));
+                    ? Loc.Get("d_drop_multi", m_DetailPool.Title, m_DetailPool.Prob != null ? m_DetailPool.Tries.Length : m_DetailPool.Draws, Rate(m_DetailPool.PerTry(m_Detail)), Rate(m_DetailPool.EachOf(m_Detail)))
+                    : Loc.Get("d_drop", m_DetailPool.Title, Rate(m_DetailPool.EachOf(m_Detail))));
             GameSkin.Label(new Rect(text.x, text.y, text.width, 36 * S), title, GameSkin.Style("title", 24, GameSkin.Gold));
             // The game font has no bold face (IMGUI squeezes the letters): bold as gold.
             body = body.Replace("<b>", "<color=#E8C56A>").Replace("</b>", "</color>");
@@ -766,13 +802,39 @@ namespace HexRevival
         // ------------------------------------------------------------------
 
         /// <summary>What the product can give; null if not described here.</summary>
+        /// <summary>
+        /// What the product can give; a Full Set with its variants (Store.Variants): the variant chosen, PvP (the Full Set),
+        /// PvE (the set's PvE full set) or both.
+        /// </summary>
+        /// <summary>The product's name (a Full Set's with its variant).</summary>
+        private static string Title(InventoryItemData item)
+        {
+            int[] prices;
+            InventoryItemData pve;
+            return Store.Variants(item, out prices, out pve) ? Store.VariantName(item, Store.VariantOf(item)) : item.m_Name.Trim();
+        }
+
         private static Contents Describe(InventoryItemData item)
+        {
+            int[] prices;
+            InventoryItemData pve;
+            if (Store.Variants(item, out prices, out pve))
+            {
+                int v = Store.VariantOf(item);
+                if (v == 1) return Describe(pve, null);
+                if (v == 2) return Describe(item, pve);
+            }
+            return Describe(item, null);
+        }
+
+        private static Contents Describe(InventoryItemData item, InventoryItemData also)
         {
             Contents c = new Contents();
             bool filled = false;
             try
             {
                 filled = Fill(item, c);
+                if (also != null) filled = Fill(also, c) || filled;
                 // The special packs drawn with SpecialPacks.Draw: no card twice in one pack.
                 string kind = SpecialPacks.KindOf(item);
                 if (kind == "trials" || kind == "common" || kind == "gauntlet" || kind == "dualshard")
@@ -851,6 +913,8 @@ namespace HexRevival
                 Items(g, Loc.Get("pc_mercenaries"), PrizePacks.SiegeMercenaryItems(), 0.05f);
                 return true;
             }
+            string camp = Loot.PackOf(item);
+            if (camp != null) { CampaignPack(c, camp); return true; }
             if (name == "Cosmic Coin Pack")
             {
                 // PrizePacks.OpenCosmicPack: one item.
@@ -992,6 +1056,44 @@ namespace HexRevival
             InventoryItemData primalItem = primal.IsValid ? Singleton<TemplateManager>.Instance.GetInventoryItem(primal) : null;
             if (primalItem != null) Items(G(c, Loc.Get("g_bonus")), Loc.Get("pc_packs"), new List<InventoryItemData> { primalItem }, Store.PrimalChance);
             return true;
+        }
+
+        /// <summary>A campaign pack (Loot.Open, its parts from Loot.Describe): each card or item with its own chance.</summary>
+        private static void CampaignPack(Contents c, string pack)
+        {
+            foreach (Loot.Slot s in Loot.Describe(pack))
+            {
+                Pool p = SlotPool(s);
+                if (p == null) continue;
+                switch (s.Kind)
+                {
+                    case "commons": p.Title = RarityName(ERarity.Common); p.Counted = true; G(c, Loc.Get("g_per_pack", RarityName(ERarity.Common), 2), Loc.Get("n_first_sets")).Pools.Add(p); break;
+                    case "card": p.Title = Loc.Get("pc_cards_title"); p.Counted = true; G(c, Loc.Get("g_camp_card")).Pools.Add(p); break;
+                    case "equipment": p.Title = Loc.Get("pc_equipment"); G(c, Loc.Get("g_camp_equipment"), Loc.Get("n_dust_instead")).Pools.Add(p); break;
+                    default:
+                        p.Title = Loc.Get(s.Kind == "stardust" ? "pc_stardust" : s.Kind == "unique" ? "pc_unique" : "pc_mercenaries");
+                        Group g = c.Groups.Find(x => x.Title == Loc.Get("g_sometimes")) ?? G(c, Loc.Get("g_sometimes"));
+                        g.Pools.Add(p);
+                        break;
+                }
+            }
+        }
+
+        private static Pool SlotPool(Loot.Slot s)
+        {
+            if (s.Items.Count == 0) return null;
+            Pool p = new Pool { Prob = new Dictionary<object, float>(), Tries = s.Tries, Draws = s.Tries.Length };
+            TemplateManager tm = Singleton<TemplateManager>.Instance;
+            List<CardTemplate> cards = new List<CardTemplate>();
+            List<InventoryItemData> items = new List<InventoryItemData>();
+            foreach (KeyValuePair<Loot.Drop, float> kv in s.Items)
+            {
+                if (kv.Key.Card != null) { cards.Add(kv.Key.Card); p.Prob[kv.Key.Card] = kv.Value; continue; }
+                InventoryItemData i = tm.GetInventoryItem(kv.Key.Item);
+                if (i != null) { items.Add(i); p.Prob[i] = kv.Value; }
+            }
+            if (cards.Count > 0) p.Cards = Sorted(cards); else p.Items = SortedItems(items);
+            return p.Count > 0 ? p : null;
         }
 
         /// <summary>Progression.OpenPack: the rare slot (a legendary 12.5%, else an epic 20%, else a rare), 4 uncommons, 12 commons.</summary>

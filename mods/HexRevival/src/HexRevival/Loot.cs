@@ -155,6 +155,136 @@ namespace HexRevival
             return res;
         }
 
+        // ------------------------------------------------------------------
+        // What a pack can give, with each thing's chance (the store's Details; same rules as Open)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// A part of a pack: drawn once per entry of Tries (each try happens with that chance), each try giving one of
+        /// Items with its probability (the probabilities add up to 1).
+        /// </summary>
+        public class Slot
+        {
+            public string Kind;   // "commons", "card", "equipment", "stardust", "unique", "mercenary"
+            public float[] Tries;
+            public readonly List<KeyValuePair<Drop, float>> Items = new List<KeyValuePair<Drop, float>>();
+        }
+
+        /// <summary>The campaign packs, by their loot table (Open's key), in the order the campaign reaches them.</summary>
+        public static readonly string[] CampaignPacks =
+            { AZ1Pack, "Tranquil Dream", "Fort Romor", "The Usurper", "Smoldering Dead", "Devonshire Keep",
+              AZ2Pack, "Brutecrown Bluff", "Great Machine Graveyard", "The Kraken", "Ruins of Kukatan" };
+
+        /// <summary>The loot table of a campaign pack's item (null: not one).</summary>
+        public static string PackOf(InventoryItemData item)
+        {
+            if (!(item is InventoryTreasureChest) || item.m_Name == null) return null;
+            string name = item.m_Name.Trim();
+            foreach (string p in CampaignPacks) if (PackItemName(p) == name) return p;
+            return null;
+        }
+
+        /// <summary>What Open draws from, part by part (empty if the pack is unknown).</summary>
+        public static List<Slot> Describe(string pack)
+        {
+            List<Slot> res = new List<Slot>();
+            PackTable t;
+            string az2;
+            Packs().TryGetValue(pack, out t);
+            AZ2Packs.TryGetValue(pack, out az2);
+            if (t == null && az2 == null) return res;
+            // Two commons, each of one of the first three sets (picked first, then a common of it).
+            Slot commons = new Slot { Kind = "commons", Tries = new[] { 1f, 1f } };
+            Dictionary<ResourceId, KeyValuePair<Drop, float>> com = new Dictionary<ResourceId, KeyValuePair<Drop, float>>();
+            foreach (string setName in CommonSets)
+            {
+                List<CardTemplate> pool = Progression.Pool(SetByName(setName), Game.Shared.Mechanics.ERarity.Common);
+                foreach (CardTemplate c in pool)
+                {
+                    float pr = 1f / CommonSets.Length / pool.Count;
+                    KeyValuePair<Drop, float> had;
+                    com[c.m_Id] = com.TryGetValue(c.m_Id, out had) ? new KeyValuePair<Drop, float>(had.Key, had.Value + pr) : new KeyValuePair<Drop, float>(new Drop { Card = c }, pr);
+                }
+            }
+            commons.Items.AddRange(com.Values);
+            res.Add(commons);
+            // The pack's card.
+            Slot card = new Slot { Kind = "card", Tries = new[] { 1f } };
+            if (t != null) AddTable(card, t, 'c', true);
+            else AddWeighted(card, Zymmer.Cards(az2).ConvertAll(c => new KeyValuePair<Drop, float>(new Drop { Card = c }, Zymmer.CardWeight(c.m_CardRarity))));
+            res.Add(card);
+            // One equipment, and a second one unless the 5th slot is a stardust.
+            Slot eq = new Slot { Kind = "equipment", Tries = new[] { 1f, 1f - StardustChance } };
+            if (t != null) AddTable(eq, t, 'e', false);
+            else
+            {
+                Func<string, List<KeyValuePair<Drop, float>>> weighted = src => Zymmer.Equipment(src).ConvertAll(i => new KeyValuePair<Drop, float>(new Drop { Item = i.m_Id }, Zymmer.EquipmentWeight(Zymmer.RarityOf(i))));
+                Dictionary<ResourceId, KeyValuePair<Drop, float>> all = new Dictionary<ResourceId, KeyValuePair<Drop, float>>();
+                Action<List<KeyValuePair<Drop, float>>, float> add = (l, share) =>
+                {
+                    float total = 0;
+                    foreach (KeyValuePair<Drop, float> kv in l) total += kv.Value;
+                    if (total <= 0) return;
+                    foreach (KeyValuePair<Drop, float> kv in l)
+                    {
+                        KeyValuePair<Drop, float> had;
+                        float pr = share * kv.Value / total;
+                        all[kv.Key.Item] = all.TryGetValue(kv.Key.Item, out had) ? new KeyValuePair<Drop, float>(had.Key, had.Value + pr) : new KeyValuePair<Drop, float>(kv.Key, pr);
+                    }
+                };
+                bool own = az2 != AlachianSeaPack && Zymmer.Equipment(az2).Count > 0;
+                if (own) add(weighted(az2), OwnEquipmentShare);
+                add(weighted(AlachianSeaPack), own ? 1f - OwnEquipmentShare : 1f);
+                eq.Items.AddRange(all.Values);
+            }
+            res.Add(eq);
+            // The 5th slot's stardust.
+            Slot dust = new Slot { Kind = "stardust", Tries = new[] { StardustChance } };
+            List<KeyValuePair<Drop, float>> dl = new List<KeyValuePair<Drop, float>>();
+            foreach (KeyValuePair<string, float> kv in Stardusts) { Drop d = Resolve(kv.Key, false); if (d != null) dl.Add(new KeyValuePair<Drop, float>(d, kv.Value)); }
+            AddWeighted(dust, dl);
+            res.Add(dust);
+            // The rare extras.
+            if (t != null)
+            {
+                Slot u = new Slot { Kind = "unique", Tries = new[] { 0.01f } };
+                AddTable(u, t, 'u', false);
+                if (u.Items.Count > 0) res.Add(u);
+            }
+            else
+            {
+                Slot m = new Slot { Kind = "mercenary", Tries = new[] { PackMercenaryChance } };
+                AddWeighted(m, Zymmer.MercenariesOf(az2).ConvertAll(x => new KeyValuePair<Drop, float>(new Drop { Item = x.m_Id }, 1f)));
+                if (m.Items.Count > 0) res.Add(m);
+            }
+            return res;
+        }
+
+        private static void AddTable(Slot s, PackTable t, char cat, bool card)
+        {
+            List<Entry> l;
+            if (!t.Cat.TryGetValue(cat, out l)) return;
+            List<KeyValuePair<Drop, float>> w = new List<KeyValuePair<Drop, float>>();
+            foreach (Entry e in l) { Drop d = Resolve(e.Name, card); if (d != null) w.Add(new KeyValuePair<Drop, float>(d, e.Pct)); }
+            AddWeighted(s, w);
+        }
+
+        /// <summary>Weights made into probabilities (one entry per card or item: equal ones added up).</summary>
+        private static void AddWeighted(Slot s, List<KeyValuePair<Drop, float>> w)
+        {
+            float total = 0;
+            foreach (KeyValuePair<Drop, float> kv in w) total += kv.Value;
+            if (total <= 0) return;
+            Dictionary<string, int> at = new Dictionary<string, int>();
+            foreach (KeyValuePair<Drop, float> kv in w)
+            {
+                string key = kv.Key.Card != null ? "c" + kv.Key.Card.m_Id : "i" + kv.Key.Item;
+                int k;
+                if (at.TryGetValue(key, out k)) s.Items[k] = new KeyValuePair<Drop, float>(s.Items[k].Key, s.Items[k].Value + kv.Value / total);
+                else { at[key] = s.Items.Count; s.Items.Add(new KeyValuePair<Drop, float>(kv.Key, kv.Value / total)); }
+            }
+        }
+
         /// <summary>One random equipment of a pack's list (rewards of "2 / 3 random equipment", Src.Video).</summary>
         public static Drop RandomEquipment(string pack)
         {

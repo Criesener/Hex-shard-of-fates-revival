@@ -327,10 +327,14 @@ namespace HexRevival
 
         // ---- Gift boxes ----
 
-        /// <summary>UIPremiumStoreItemContext(InventoryTreasureChest, StoreItem) (postfix): a gift box is no campaign pack.</summary>
+        /// <summary>
+        /// UIPremiumStoreItemContext(InventoryTreasureChest, StoreItem) (postfix): a gift box is no campaign pack. The
+        /// campaign packs (additional items) neither: the store marks them "Bonus chance!" and starts at 3 of them; the
+        /// mod's campaign packs have no bonus, and start at 1 as the other products.
+        /// </summary>
         public static void OnChestItem(UIPremiumStoreItemContext ctx, InventoryTreasureChest chest)
         {
-            if (ctx == null || SpecialPacks.KindOf(chest) != "giftbox") return;
+            if (ctx == null || (SpecialPacks.KindOf(chest) != "giftbox" && Loot.PackOf(chest) == null)) return;
             ctx.IsCampaignPack = false;
             ctx.Quantity = 1;
         }

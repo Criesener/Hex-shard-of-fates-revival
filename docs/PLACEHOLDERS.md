@@ -196,11 +196,8 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | PrizePacks.cs:57 | "Nearly 1 in 3" a booster; sleeves "one of the rarest things" (PLACEHOLDER 5%); otherwise an alternate art card. |
 | Progression.cs:23 | a PLACEHOLDER chosen for the mod, to be replaced when better information turns up. |
 | Progression.cs:150 | Underworld and Ardent runs, Vandersveldt), values of the Dec 2016+ client; PLACEHOLDER where noted. |
-| Progression.cs:179 | Finanif: not read |
 | Progression.cs:203 | ---- AZ2 map battles (Src.Video, MyHotStream Underworld run; the same for both factions: PLACEHOLDER for the |
-| Progression.cs:281 | { "kukatan/NodeQ", new Reward { Gold = 600, Xp = 525, Source = Src.Placeholder, Note = "Tomb of Omens never fought on video" } }, |
 | Progression.cs:550 | Gold of a quest whose reward is unknown. PLACEHOLDER.</summary> |
-| Progression.cs:565 | if (!QuestRewards.TryGetValue(script, out r)) r = new Reward { Gold = QuestGold, Source = Src.Placeholder }; |
 | Progression.cs:763 | no list for that set: the old PLACEHOLDER gold |
 | Progression.cs:799 | "BoosterPack_Content_Combined" text; before 1.2.10 13 commons and 3 uncommons). PLACEHOLDER: the top card is |
 | Progression.cs:802 | their common slots take uncommons (PLACEHOLDER, the real PvE pack content is unknown). |
@@ -233,11 +230,12 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | SpecialPacks.cs:171 | (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). Empty when the player owns them all. |
 | Store.cs:23 | for gold: the gold price is a PLACEHOLDER. Bought packs had about a 2% chance of a bonus |
 | Store.cs:28 | Gold price of a booster. PLACEHOLDER (no source: gold only bought packs from players, ~22,000 on the auction house in 2016).</summary> |
-| Store.cs:54 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio.</summary> |
-| Store.cs:109 | PLACEHOLDER gold prices of products without a known price.</summary> |
-| Store.cs:112 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
-| Store.cs:119 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
-| Store.cs:428 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
+| Store.cs:89 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio.</summary> |
+| Store.cs:144 | PLACEHOLDER gold prices of products without a known price.</summary> |
+| Store.cs:147 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
+| Store.cs:155 | PLACEHOLDER gold prices of the campaign packs (written as the other platinum-era prices). Zymmer (2026-11-02): |
+| Store.cs:176 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
+| Store.cs:522 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
 | StoreIcons.cs:22 | "PLACEHOLDER" picture: a related product's banner (see Related); the Random Previous Kismet Pack's missing model |
 | StoreIcons.cs:34 | Banners the game ships as a "PLACEHOLDER" picture (Src.Game, icons.ab): Dead of Winter Primal Pack's. Replaced |
 | StoreIcons.cs:219 | The product whose banner (and model) a product without one shows (PLACEHOLDER, a mod choice: the original |

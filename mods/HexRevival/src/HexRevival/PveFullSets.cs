@@ -41,6 +41,17 @@ namespace HexRevival
             return item != null && s_Sets.TryGetValue(item.m_Id, out s) ? s : null;
         }
 
+        /// <summary>The package of a set's Full Set item (null: none, or the option is off).</summary>
+        public static InventoryItemData ForFullSet(InventoryItemData fullSet)
+        {
+            InventoryCardPack p = fullSet as InventoryCardPack;
+            CardSetTemplate set;
+            if (!Enabled || p == null || p.m_CardPackType != ECardPackType.FullSet || s_Sets.ContainsKey(p.m_Id)
+                || !Singleton<TemplateManager>.Instance.CardSets.TryGetValue(p.m_SetId, out set) || set == null) return null;
+            ResourceId id = IdFor(set);
+            return s_Sets.ContainsKey(id) ? Singleton<TemplateManager>.Instance.InventoryItems[id] : null;
+        }
+
         /// <summary>
         /// The packages' items, made once from the sets' Full Set items (only for the 9 booster sets, whose chests and
         /// wheel the notes list). Returned in the sets' order.
