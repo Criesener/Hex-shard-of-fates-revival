@@ -187,6 +187,8 @@ namespace HexRevival
                 return k < 0 ? null : new Product { Item = item, Price = StardustGold[k], Tab = "stardust" };
             }
             string special = SpecialPacks.KindOf(item);
+            // The holiday gift boxes are chests that came with opened boosters, not products (Packs; user 2026-11-02).
+            if (special == "giftbox") return null;
             if (special != null) return new Product { Item = item, Price = SpecialPacks.GoldPrice(special), Tab = special == "common" || special == "fullset" ? "cardpack" : "special" };
             InventoryCardPack pack = item as InventoryCardPack;
             if (pack != null)

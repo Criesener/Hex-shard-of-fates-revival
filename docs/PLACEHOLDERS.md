@@ -143,17 +143,17 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | Battlegrounds.cs:62 | PLACEHOLDER: the limited gauntlets use the last set's boosters (the server chose the product).</summary> |
 | Battlegrounds.cs:64 | PLACEHOLDER: basic shards of each kind added to a limited pool (the deck builder needs them).</summary> |
 | Battlegrounds.cs:66 | PLACEHOLDER: time to pick a draft card.</summary> |
-| Battlegrounds.cs:236 | PLACEHOLDER prize: one booster per match won (unopened, to the inventory).</summary> |
-| Battlegrounds.cs:995 | Tournaments" for a constructed gauntlet (3 wins as well: PLACEHOLDER). One not owned yet. |
-| Battlegrounds.cs:1105 | The stars at which the ladder's tiers start (the AI configuration's default tiers; PLACEHOLDER).</summary> |
-| Battlegrounds.cs:1143 | past the iron ranks (PLACEHOLDER: the iron ranks of new players are not known) |
-| Battlegrounds.cs:1189 | so a win gives 1 star). Never below 0 stars (PLACEHOLDER). Returns true if it was a ladder match. |
+| Battlegrounds.cs:238 | PLACEHOLDER prize: one booster per match won (unopened, to the inventory).</summary> |
+| Battlegrounds.cs:997 | Tournaments" for a constructed gauntlet (3 wins as well: PLACEHOLDER). One not owned yet. |
+| Battlegrounds.cs:1109 | The stars at which the ladder's tiers start (the AI configuration's default tiers; PLACEHOLDER).</summary> |
+| Battlegrounds.cs:1147 | past the iron ranks (PLACEHOLDER: the iron ranks of new players are not known) |
+| Battlegrounds.cs:1193 | so a win gives 1 star). Never below 0 stars (PLACEHOLDER). Returns true if it was a ladder match. |
 | CampaignBoat.cs:127 | of a voyage, 1 time in 3 (PLACEHOLDER chance; it fits 2 to 4 calm voyages before). Saves where a sea quest was |
 | CampaignBoat.cs:139 | PLACEHOLDER: chance that Scylla and Charybdis wake at the start of a voyage.</summary> |
 | DuelingPit.cs:21 | chosen deck against another of the five, piloted by the AI with its "- AI" version (which one: PLACEHOLDER, drawn |
-| Dungeons.cs:387 | PLACEHOLDER: the blast's victim plays second |
-| Dungeons.cs:706 | Brutecrown Bluff not played: PLACEHOLDER (Vargar) |
-| Dungeons.cs:729 | seen: their totals (12-13, 14-15) and the limits between the seen ones are PLACEHOLDER. |
+| Dungeons.cs:388 | PLACEHOLDER: the blast's victim plays second |
+| Dungeons.cs:709 | Brutecrown Bluff not played: PLACEHOLDER (Vargar) |
+| Dungeons.cs:732 | seen: their totals (12-13, 14-15) and the limits between the seen ones are PLACEHOLDER. |
 | Fortunes.cs:17 | [W__kpqC147U] 0:51, Fortune of Diamond). PLACEHOLDER: how the fortune is drawn (random here; the runs show |
 | Hometown.cs:28 | PLACEHOLDER: the quest giver is shown once the sparring match is won (the client's quest hint follows the sparring |
 | Loot.cs:65 | Dead packs (Src.LootTables2016). Both PLACEHOLDER by analogy. Src.Video agrees for Fort Romor: its packs |
@@ -163,15 +163,18 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | NodeScripts.cs:126 | Sapphire Gate: where the Sapphire Key came from is unknown (PLACEHOLDER: the gate is open). Src.Video: no run saw |
 | PackContents.cs:15 | each card's or item's own chance. Not in the original game; the odds are the mod's (PLACEHOLDER where they are). |
 | Packs.cs:30 | for 1 / 2 gold reels. Src.HexCodex: each set's Wheel of Fate and chest sleeves (see Sleeves). PLACEHOLDER: the |
-| Packs.cs:113 | (PLACEHOLDER chance), given when the opening is over. |
-| Packs.cs:162 | better chests came from the wheel's upgrades. PLACEHOLDER: no rarer chest at all (a small sample). The wiki |
-| Packs.cs:238 | that show it. The reel colors are independent: PLACEHOLDER red 20%, gold 5%. |
-| Packs.cs:272 | alternate arts: PLACEHOLDER, see the class |
-| Packs.cs:278 | "Exclusive rewards": one of the set's wheel items (PLACEHOLDER, see the class). |
-| Packs.cs:339 | PLACEHOLDER: how often a chest also holds one of its set's sleeves, and a booster one of its own.</summary> |
-| Packs.cs:368 | The set's chest loot (Src.Zymmer pools, Zymmer.OpenChest); a primal chest: one item more (PLACEHOLDER). |
-| Packs.cs:375 | chests (PLACEHOLDER chance). |
-| Packs.cs:383 | A set without a chest list: gold (the account chests' old PLACEHOLDER). |
+| Packs.cs:117 | (PLACEHOLDER chance), given when the opening is over. |
+| Packs.cs:166 | better chests came from the wheel's upgrades. PLACEHOLDER: no rarer chest at all (a small sample). The wiki |
+| Packs.cs:182 | base price 1, the holiday sleeves "Awarded during the [year] [holiday] Holiday"). PLACEHOLDER: one gift box with |
+| Packs.cs:183 | every booster opened during the holiday (Sleeves.HolidaysNow, PLACEHOLDER dates), and outside the holidays one |
+| Packs.cs:205 | PLACEHOLDER: the gold in a gift box when its holiday has nothing left the player does not own (a chest's fallback).</summary> |
+| Packs.cs:278 | that show it. The reel colors are independent: PLACEHOLDER red 20%, gold 5%. |
+| Packs.cs:312 | alternate arts: PLACEHOLDER, see the class |
+| Packs.cs:318 | "Exclusive rewards": one of the set's wheel items (PLACEHOLDER, see the class). |
+| Packs.cs:382 | PLACEHOLDER: how often a chest also holds one of its set's sleeves, and a booster one of its own.</summary> |
+| Packs.cs:434 | The set's chest loot (Src.Zymmer pools, Zymmer.OpenChest); a primal chest: one item more (PLACEHOLDER). |
+| Packs.cs:441 | chests (PLACEHOLDER chance). |
+| Packs.cs:449 | A set without a chest list: gold (the account chests' old PLACEHOLDER). |
 | PrizePacks.cs:20 | PLACEHOLDER (the sleeves are the game data's own: "Available in the 2018 Siege Pack" / "Cosmic Coin Pack"). |
 | PrizePacks.cs:34 | PLACEHOLDER sets: the PvE promo cards and the alternate arts of the 2018 set (Doombringer, set 9).</summary> |
 | PrizePacks.cs:43 | PLACEHOLDER odds: PvE card 40%, alternate art shard 20%, sleeve 15%, alternate art card 10%, equipment 10%, mercenary 5%. |
@@ -205,16 +208,16 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | SpecialPacks.cs:23 | shards drawn at random (and shardless cards), no chest (PLACEHOLDER: a booster's counts); |
 | SpecialPacks.cs:24 | - Kismet's Draft Pack (KismetPack): a booster's counts drawn from every booster set (PLACEHOLDER); |
 | SpecialPacks.cs:25 | - GenCon 2016 Booster Pack (GenconPack, Herofall): a Herofall booster's cards (PLACEHOLDER); |
-| SpecialPacks.cs:29 | equipment pieces not owned yet (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). |
 | SpecialPacks.cs:30 | Prices: PLACEHOLDER (see GoldPrice). |
 | SpecialPacks.cs:55 | PLACEHOLDER gold prices.</summary> |
+| SpecialPacks.cs:166 | (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). Empty when the player owns them all. |
 | Store.cs:23 | for gold: the gold price is a PLACEHOLDER. Bought packs had about a 2% chance of a bonus |
 | Store.cs:28 | Gold price of a booster. PLACEHOLDER (no source: gold only bought packs from players, ~22,000 on the auction house in 2016).</summary> |
-| Store.cs:47 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio (the default; each account may choose its own, Criesener 2026-11-01). |
-| Store.cs:65 | PLACEHOLDER gold prices of products without a known price.</summary> |
-| Store.cs:68 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
-| Store.cs:75 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
-| Store.cs:352 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
+| Store.cs:47 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio.</summary> |
+| Store.cs:102 | PLACEHOLDER gold prices of products without a known price.</summary> |
+| Store.cs:105 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
+| Store.cs:112 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
+| Store.cs:395 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
 | StoreIcons.cs:22 | "PLACEHOLDER" picture: a related product's banner (see Related); the Random Previous Kismet Pack's missing model |
 | StoreIcons.cs:34 | Banners the game ships as a "PLACEHOLDER" picture (Src.Game, icons.ab): Dead of Winter Primal Pack's. Replaced |
 | StoreIcons.cs:219 | The product whose banner (and model) a product without one shows (PLACEHOLDER, a mod choice: the original |

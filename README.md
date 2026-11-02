@@ -49,7 +49,8 @@ and rebuilds locally what the server used to do: game rules, AI opponent, your c
   the game and find opponents.
 - **Store**: boosters, the game's preconstructed decks, the Prize Exchange (Siege Sacks, Cosmic Coins),
   primal packs and battleboards, sold for gold. Boosters are opened on the game's Pack Opening screen, each with a
-  treasure chest you can spin on the Wheel of Fate. Every product has a **Details** window: everything it can give,
+  treasure chest you can spin on the Wheel of Fate; during the Haunted Harvest, Feast of Abundance and Night of Bells
+  holidays a booster also brings that holiday's gift box (its sleeve and equipment). Every product has a **Details** window: everything it can give,
   grouped by slot with its drop rates (the mod's own odds), the cards drawn whole and how many you own; a right
   click shows a card's text, an equipment's effect or a mercenary's party bonus and deck rules. The store's
   **Redeem code** gives the Kickstarter reward tiers and the convention and event items, once per account.

@@ -102,6 +102,7 @@ namespace HexRevival
             if (n <= 0) { r.Error = EOpenCardPackError.NotEnoughInventory; return r; }
             Load();
             bool primal = pack.m_CardPackType == ECardPackType.PrimalPack;
+            int gifts = 0;
             for (int i = 0; i < n; i++)
             {
                 List<CardTemplate> cards = primal ? Primal(set) : Progression.OpenPack(set);
@@ -109,6 +110,9 @@ namespace HexRevival
                 // The chest of the pack (a primal pack's is legendary, Src.HexServer).
                 Chest c = NewChest(primal ? ETreasureChestType.Legendary : RollRarity(), set.m_Id);
                 r.NewChestInstances.Add(Bits(c));
+                // A holiday's gift box with the booster (see GiftBoxFor), a second chest in the answer.
+                InventoryItemData box = primal ? null : GiftBoxFor(DateTime.Now);
+                if (box != null) { r.NewChestInstances.Add(Bits(NewGiftBox(box))); gifts++; }
                 // "Obtained by opening [set] Booster Packs" (Src.HexCodex: Doombringer's): sometimes one of them
                 // (PLACEHOLDER chance), given when the opening is over.
                 if (!primal && UnityEngine.Random.value < BoosterSleeveChance)
@@ -123,7 +127,7 @@ namespace HexRevival
             // ours to take, once the (delayed) answer is delivered: earlier, the screen's pack list is rebuilt before
             // the opening animation (issue #25).
             s_ToRemove.Add(new KeyValuePair<ResourceId, int>(item, n));
-            Debug.Log("[HexRevival] [Packs] opened " + n + " x " + pack.m_Name + ": " + r.NewCardInstances.Count + " card(s), " + n + " chest(s)");
+            Debug.Log("[HexRevival] [Packs] opened " + n + " x " + pack.m_Name + ": " + r.NewCardInstances.Count + " card(s), " + n + " chest(s)" + (gifts > 0 ? ", " + gifts + " gift box(es)" : ""));
             return r;
         }
 
@@ -164,6 +168,42 @@ namespace HexRevival
         /// odds; the later survey is kept.
         /// </summary>
         private static ETreasureChestType RollRarity() { return ETreasureChestType.Common; }
+
+        // ------------------------------------------------------------------
+        // Holiday gift boxes
+        // ------------------------------------------------------------------
+
+        /// <summary>A chest's LootPack when it is a holiday gift box (SpecialPacks.OpenGiftBox).</summary>
+        private const string GiftBoxLoot = "@giftbox";
+
+        /// <summary>
+        /// The holiday gift boxes (Harvest of Souls, Night of Bells, Feast of Abundance) came with the booster packs opened
+        /// during their holiday, not from the store (user 2026-11-02; Src.Game: promo treasure chests without a spin,
+        /// base price 1, the holiday sleeves "Awarded during the [year] [holiday] Holiday"). PLACEHOLDER: one gift box with
+        /// every booster opened during the holiday (Sleeves.HolidaysNow, PLACEHOLDER dates), and outside the holidays one
+        /// booster in 50 brings a random one, so they can be had all year offline.
+        /// </summary>
+        internal const float OffSeasonGiftBoxChance = 0.02f;
+
+        /// <summary>The gift box a booster opened now comes with (null: none).</summary>
+        private static InventoryItemData GiftBoxFor(DateTime now)
+        {
+            List<InventoryItemData> boxes = SpecialPacks.GiftBoxes();
+            if (boxes.Count == 0) return null;
+            List<string> holidays = Sleeves.HolidaysNow(now);
+            foreach (InventoryItemData b in boxes) if (holidays.Contains(SpecialPacks.GiftBoxHoliday(b))) return b;
+            return UnityEngine.Random.value < OffSeasonGiftBoxChance ? boxes[s_Rng.Next(boxes.Count)] : null;
+        }
+
+        private static Chest NewGiftBox(InventoryItemData box)
+        {
+            Chest c = new Chest { Id = s_NextChest++, Rarity = ETreasureChestType.Common, Spin = EChestSpinStatus.NoSpin, Set = ResourceId.Invalid, Template = box.m_Id, LootPack = GiftBoxLoot };
+            s_Chests[c.Id] = c;
+            return c;
+        }
+
+        /// <summary>PLACEHOLDER: the gold in a gift box when its holiday has nothing left the player does not own (a chest's fallback).</summary>
+        internal const int EmptyGiftBoxGold = 500;
 
         // ------------------------------------------------------------------
         // The Wheel of Fate
@@ -350,6 +390,29 @@ namespace HexRevival
             {
                 Chest c;
                 if (!s_Chests.TryGetValue(id, out c)) { r.Error = EOpenChestError.InvalidChestID; continue; }
+                if (c.LootPack == GiftBoxLoot)
+                {
+                    // A holiday gift box: one of its sleeves and equipment pieces not owned yet, else gold.
+                    InventoryItemData box = Singleton<TemplateManager>.Instance.GetInventoryItem(c.Template);
+                    List<Loot.Drop> gift = SpecialPacks.OpenGiftBox(box);
+                    foreach (Loot.Drop d in gift)
+                    {
+                        Progression.GiveDrop(d);
+                        r.inventoryTemplateIDs.Add(d.Item);
+                    }
+                    if (gift.Count == 0)
+                    {
+                        r.goldAcquired += EmptyGiftBoxGold;
+                        Saves.Current.Gold += EmptyGiftBoxGold;
+                        Notices.Show(Loc.Get("giftbox_empty", EmptyGiftBoxGold.ToString("N0")));
+                    }
+                    s_Chests.Remove(id);
+                    r.validChestIds.Add(id);
+                    ulong opened = id;
+                    LocalServer.Later(() => { try { GameClient.Instance.PlayerProfile.RemoveInventoryItem(new UID(UID.Type.InventoryItem, opened)); } catch { } });
+                    Debug.Log("[HexRevival] [Packs] gift box " + (box != null ? box.m_Name.Trim() : c.Template.ToString()) + " opened: " + gift.Count + " item(s)");
+                    continue;
+                }
                 if (c.LootPack != null)
                 {
                     // A campaign pack (Howling Plains Pack, Tranquil Dream Pack...): its table's cards and equipment.
