@@ -210,16 +210,17 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | SpecialPacks.cs:23 | shards drawn at random (and shardless cards), no chest (PLACEHOLDER: a booster's counts); |
 | SpecialPacks.cs:24 | - Kismet's Draft Pack (KismetPack): a booster's counts drawn from every booster set (PLACEHOLDER); |
 | SpecialPacks.cs:25 | - GenCon 2016 Booster Pack (GenconPack, Herofall): a Herofall booster's cards (PLACEHOLDER); |
-| SpecialPacks.cs:30 | Prices: PLACEHOLDER (see GoldPrice). |
-| SpecialPacks.cs:56 | PLACEHOLDER gold prices.</summary> |
-| SpecialPacks.cs:167 | (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). Empty when the player owns them all. |
+| SpecialPacks.cs:31 | Prices: PLACEHOLDER (see GoldPrice). |
+| SpecialPacks.cs:57 | PLACEHOLDER gold prices.</summary> |
+| SpecialPacks.cs:157 | PLACEHOLDER gold price of a gift box in the store ("additional items in the store" only, Store.ExtraItems).</summary> |
+| SpecialPacks.cs:171 | (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). Empty when the player owns them all. |
 | Store.cs:23 | for gold: the gold price is a PLACEHOLDER. Bought packs had about a 2% chance of a bonus |
 | Store.cs:28 | Gold price of a booster. PLACEHOLDER (no source: gold only bought packs from players, ~22,000 on the auction house in 2016).</summary> |
-| Store.cs:47 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio.</summary> |
-| Store.cs:102 | PLACEHOLDER gold prices of products without a known price.</summary> |
-| Store.cs:105 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
-| Store.cs:112 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
-| Store.cs:402 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
+| Store.cs:54 | Gold per platinum: the boosters' 200 platinum (Src.Forum2017, also their base price in the game data) sell for 2000 gold. PLACEHOLDER ratio.</summary> |
+| Store.cs:109 | PLACEHOLDER gold prices of products without a known price.</summary> |
+| Store.cs:112 | Gold prices of stardust (Common, Uncommon, Rare, Legendary, Promo; PLACEHOLDER: a player's memory of the original store (Criesener), which |
+| Store.cs:119 | PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary> |
+| Store.cs:428 | "Available in the [name] Kismet's Reserve Pack" (Src.HexCodex): its sleeve, once, in 1 pack in 5 (PLACEHOLDER). |
 | StoreIcons.cs:22 | "PLACEHOLDER" picture: a related product's banner (see Related); the Random Previous Kismet Pack's missing model |
 | StoreIcons.cs:34 | Banners the game ships as a "PLACEHOLDER" picture (Src.Game, icons.ab): Dead of Winter Primal Pack's. Replaced |
 | StoreIcons.cs:219 | The product whose banner (and model) a product without one shows (PLACEHOLDER, a mod choice: the original |

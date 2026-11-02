@@ -11,7 +11,7 @@ using UnityEngine;
 namespace HexRevival
 {
     /// <summary>
-    /// "PvE full sets" (account option, off by default; Criesener's idea, user 2026-11-02): next to each set's Full Set
+    /// PvE full sets (an "additional items in the store" product, Store.ExtraItems; Criesener's idea, user 2026-11-02): next to each set's Full Set
     /// (one of every PvP card), a store package with everything of the set's PvE side that otherwise comes from its
     /// chests and Wheel of Fate, for players who would rather not open and spin chests:
     /// - the set's PvE cards (its "Set N Chest Loot" and "Set N Wheels of Fate" cards, Src.Zymmer), up to 4 copies each;
@@ -31,8 +31,8 @@ namespace HexRevival
         /// <summary>The packages registered: their item id -> the card set.</summary>
         private static readonly Dictionary<ResourceId, CardSetTemplate> s_Sets = new Dictionary<ResourceId, CardSetTemplate>();
 
-        /// <summary>The option of the current account.</summary>
-        public static bool Enabled { get { return Saves.Current != null && !Saves.Current.UnlockAll && Saves.Current.PveFullSets; } }
+        /// <summary>The current account's "additional items in the store" option.</summary>
+        public static bool Enabled { get { return Store.ExtraItems; } }
 
         /// <summary>The set of a package item (null: not one).</summary>
         public static CardSetTemplate SetOf(InventoryItemData item)

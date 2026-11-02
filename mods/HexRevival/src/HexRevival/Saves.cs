@@ -59,10 +59,12 @@ namespace HexRevival
             /// </summary>
             public bool Crafting;
             /// <summary>
-            /// The store's PvE full sets (see PveFullSets): off by default, also for the accounts made before it existed
-            /// (Criesener's idea, user 2026-11-02); never on "unlock everything" accounts, which own everything.
+            /// "Additional items in the store" (user 2026-11-02): products the original store did not sell, for players
+            /// who would rather buy than wait for an event or open chests: the PvE full sets (see PveFullSets, Criesener's
+            /// idea) and the holiday gift boxes (see SpecialPacks). Off by default, also for the accounts made before it
+            /// existed; never on "unlock everything" accounts, which own everything.
             /// </summary>
-            public bool PveFullSets;
+            public bool ExtraStore;
             /// <summary>One-time rewards already received ("champion:reward" keys).</summary>
             public HashSet<string> Claims = new HashSet<string>();
         }
@@ -123,7 +125,7 @@ namespace HexRevival
         /// the gold prices (0: the defaults).
         /// </summary>
         public static Info Create(string name, bool unlockAll, bool tutorial = false, bool goldPrices = true, long gold = 0, long platinum = 0, bool allGems = false, bool crafting = false,
-            int goldPerPlatinum = 0, int goldDivisor = 0, bool pveFullSets = false)
+            int goldPerPlatinum = 0, int goldDivisor = 0, bool extraStore = false)
         {
             Directory.CreateDirectory(Path.Combine(RootDir, name));
             Info i = new Info { Name = name, UnlockAll = unlockAll, LastPlayed = DateTime.Now, TutorialPending = tutorial };
@@ -134,7 +136,7 @@ namespace HexRevival
             if (!unlockAll && goldDivisor > 0) i.GoldDivisor = goldDivisor;
             i.AllGems = allGems;
             i.Crafting = !unlockAll && crafting;
-            i.PveFullSets = !unlockAll && pveFullSets;
+            i.ExtraStore = !unlockAll && extraStore;
             Write(i);
             return i;
         }
@@ -225,7 +227,7 @@ namespace HexRevival
                     else if (k == "golddivisor") { int n; if (int.TryParse(v, out n) && n > 0) i.GoldDivisor = n; }
                     else if (k == "allgems") i.AllGems = v == "1";
                     else if (k == "crafting") i.Crafting = v == "1";
-                    else if (k == "pvefullsets") i.PveFullSets = v == "1";
+                    else if (k == "extrastore") i.ExtraStore = v == "1";
                     else if (k == "claims") i.Claims.UnionWith(v.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
                 }
             }
@@ -255,7 +257,7 @@ namespace HexRevival
                     "golddivisor=" + i.GoldDivisor,
                     "allgems=" + (i.AllGems ? "1" : "0"),
                     "crafting=" + (i.Crafting ? "1" : "0"),
-                    "pvefullsets=" + (i.PveFullSets ? "1" : "0"),
+                    "extrastore=" + (i.ExtraStore ? "1" : "0"),
                     "claims=" + string.Join(",", new List<string>(i.Claims).ToArray()) });
             }
             catch (Exception e) { Debug.LogError("[HexRevival] [Saves] write " + i.Name + ": " + e.Message); }

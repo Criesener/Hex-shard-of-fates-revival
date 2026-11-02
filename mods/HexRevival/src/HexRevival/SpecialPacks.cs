@@ -25,8 +25,9 @@ namespace HexRevival
     /// - GenCon 2016 Booster Pack (GenconPack, Herofall): a Herofall booster's cards (PLACEHOLDER);
     /// - Random Previous Kismet Pack: "A random previously released Kismet Pack" (Src.Game): one of the store's Kismet's
     ///   Reserve packs, delivered as that pack;
-    /// The holiday gift boxes (Harvest of Souls, Night of Bells, Feast of Abundance) are not sold: they are treasure chests
-    /// that come with opened booster packs (Packs; user 2026-11-02), opened here (OpenGiftBox).
+    /// The holiday gift boxes (Harvest of Souls, Night of Bells, Feast of Abundance) are treasure chests that come with
+    /// opened booster packs (Packs; user 2026-11-02), opened here (OpenGiftBox); the store sells them only with the
+    /// "additional items in the store" option (Store.ExtraItems).
     /// Prices: PLACEHOLDER (see GoldPrice).
     /// </summary>
     public static class SpecialPacks
@@ -152,6 +153,9 @@ namespace HexRevival
         }
 
         private static CardSetTemplate Any(List<CardSetTemplate> sets) { return sets.Count > 0 ? sets[UnityEngine.Random.Range(0, sets.Count)] : null; }
+
+        /// <summary>PLACEHOLDER gold price of a gift box in the store ("additional items in the store" only, Store.ExtraItems).</summary>
+        internal const int GiftBoxGold = 5000;
 
         /// <summary>The game's holiday gift boxes (treasure chests "... Gift Box" of the game data: promo chests without a spin).</summary>
         internal static List<InventoryItemData> GiftBoxes()
