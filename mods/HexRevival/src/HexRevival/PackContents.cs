@@ -828,6 +828,17 @@ namespace HexRevival
         private static bool Fill(InventoryItemData item, Contents c)
         {
             string name = (item.m_Name ?? "").Trim();
+            CardSetTemplate pve = PveFullSets.SetOf(item);
+            if (pve != null)
+            {
+                // PveFullSets.Deliver: every item once (what is owned already is not given again), the cards up to 4 copies.
+                Group g = G(c, Loc.Get("g_pvefullset"), Loc.Get("n_pvefullset"));
+                g.Pools.Add(new Pool { Title = Loc.Get("pc_pve_cards"), Cards = Sorted(PveFullSets.Cards(pve)), Once = true, Counted = true });
+                g.Pools.Add(new Pool { Title = Loc.Get("pc_mercenaries"), Items = SortedItems(PveFullSets.Mercs(pve).ConvertAll(m => (InventoryItemData)m)), Once = true });
+                g.Pools.Add(new Pool { Title = Loc.Get("pc_sleeves"), Items = SortedItems(PveFullSets.SetSleeves(pve).ConvertAll(s => (InventoryItemData)s)), Once = true });
+                g.Pools.Add(new Pool { Title = Loc.Get("pc_equipment"), Items = SortedItems(PveFullSets.Equipment(pve)), Once = true });
+                return true;
+            }
             if (name == "Siege Pack")
             {
                 // PrizePacks.OpenSiegePack: one item.

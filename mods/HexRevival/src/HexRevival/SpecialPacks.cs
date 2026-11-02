@@ -36,6 +36,7 @@ namespace HexRevival
         {
             InventoryCardPack p = item as InventoryCardPack;
             string name = item != null && item.m_Name != null ? item.m_Name.Trim() : "";
+            if (PveFullSets.SetOf(item) != null) return "pvefullset";
             if (p != null)
                 switch (p.m_CardPackType)
                 {

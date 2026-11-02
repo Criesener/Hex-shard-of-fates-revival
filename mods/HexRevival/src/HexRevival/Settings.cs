@@ -56,6 +56,8 @@ namespace HexRevival
                 Store.PriceExample(Saves.Current.GoldPrices, Saves.Current.GoldPerPlatinum, Saves.Current.GoldDivisor));
             EnsureRow(row, grid, "HexRevival_Crafting", "opt_crafting", offline && !Saves.Current.UnlockAll,
                 () => Saves.Current != null && Saves.Current.Crafting, v => { if (Saves.Current != null) { Saves.Current.Crafting = v; Saves.SaveCurrent(); } });
+            EnsureRow(row, grid, "HexRevival_PveFullSets", "opt_pvefullsets", offline && !Saves.Current.UnlockAll,
+                () => Saves.Current != null && Saves.Current.PveFullSets, v => { if (Saves.Current != null) { Saves.Current.PveFullSets = v; Saves.SaveCurrent(); } });
             EnsureRow(row, grid, "HexRevival_AllGems", "opt_allgems", offline,
                 () => Saves.Current != null && Saves.Current.AllGems, v => { if (Saves.Current != null) { Saves.Current.AllGems = v; Saves.SaveCurrent(); } });
         }

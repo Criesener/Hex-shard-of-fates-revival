@@ -57,6 +57,9 @@ and rebuilds locally what the server used to do: game rules, AI opponent, your c
 - **Crafting** (an account option, off by default): copies of a card beyond 4 and of an equipment beyond 1 break
   down into gems and parts, and missing ones are crafted from them and stardust. Stardust also unlocks a card's
   extended art.
+- **PvE full sets** (an account option, off by default): the store also sells, for each set, its PvE cards (4
+  copies), its chest and Wheel of Fate equipment, its six mercenaries and its six sleeves, for players who would
+  rather not open and spin chests.
 - **Account levels**: their rewards are claimed on the game's account panel (click the XP bar), packs as packs.
 - **Full collection**: every card (4 copies, unlimited basic shards) and every equipment, or a
   progression account that earns its cards by playing.

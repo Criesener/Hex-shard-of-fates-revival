@@ -121,13 +121,16 @@ namespace HexRevival
         private static List<StoreItem> Items()
         {
             bool goldPrices = Saves.Current == null || Saves.Current.GoldPrices;
-            string key = goldPrices + "/" + GoldPerPlatinum + "/" + GoldDivisor;
+            bool pve = PveFullSets.Enabled;
+            string key = goldPrices + "/" + GoldPerPlatinum + "/" + GoldDivisor + "/" + pve;
             if (s_Items != null && s_ItemsKey == key) return s_Items;
             s_ItemsKey = key;
             s_Items = new List<StoreItem>();
             s_Products.Clear();
             TemplateManager tm = Singleton<TemplateManager>.Instance;
-            foreach (InventoryItemData item in tm.InventoryItems.Values)
+            // The PvE full sets' items, made before the catalog is read (they join the game's items).
+            if (pve) PveFullSets.Items();
+            foreach (InventoryItemData item in new List<InventoryItemData>(tm.InventoryItems.Values))
             {
                 Product p = Price(item, tm);
                 if (p == null) continue;
@@ -187,6 +190,8 @@ namespace HexRevival
                 return k < 0 ? null : new Product { Item = item, Price = StardustGold[k], Tab = "stardust" };
             }
             string special = SpecialPacks.KindOf(item);
+            // A PvE full set (an account option): next to the set's Full Set.
+            if (special == "pvefullset") return PveFullSets.Enabled ? new Product { Item = item, Price = PveFullSets.GoldPrice, Tab = "cardpack" } : null;
             // The holiday gift boxes are chests that came with opened boosters, not products (Packs; user 2026-11-02).
             if (special == "giftbox") return null;
             if (special != null) return new Product { Item = item, Price = SpecialPacks.GoldPrice(special), Tab = special == "common" || special == "fullset" ? "cardpack" : "special" };
@@ -321,6 +326,8 @@ namespace HexRevival
                     if (!Sleeves.Owned(id)) { inventory_bits sb = Inventory.GrantSilently(id); if (sb != null) r.GrantedInventory.Add(sb); }
                 return;
             }
+            CardSetTemplate pveSet = PveFullSets.SetOf(item);
+            if (pveSet != null) { PveFullSets.Deliver(pveSet, r); return; }
             if (SpecialPacks.Deliver(item, r)) return;
             InventoryCardPack pack = item as InventoryCardPack;
             if (pack != null)

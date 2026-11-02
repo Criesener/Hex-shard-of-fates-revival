@@ -341,6 +341,16 @@ namespace HexRevival
         /// </summary>
         public static void OnPackItem(UIPremiumStoreItemContext ctx, InventoryCardPack pack)
         {
+            // A PvE full set: its own name, and not the Full Set's PvP collection count (game Details).
+            CardSetTemplate pve = PveFullSets.SetOf(pack);
+            if (ctx != null && pve != null)
+            {
+                ctx.Name = Loc.Get("pve_fullset_name", pve.m_Name.Trim());
+                ctx.IsBoosterPack = false;
+                ctx.HasDetails = false;
+                ctx.StarterPackContentTooltip = string.Empty;
+                return;
+            }
             if (ctx == null || SpecialPacks.KindOf(pack) != "randomkismet") return;
             ctx.IsBoosterPack = false;
             ctx.HasDetails = false;
