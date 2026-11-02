@@ -33,6 +33,13 @@ namespace HexRevival
         private static List<StoreItem> s_Items;
         private static string s_ItemsKey;   // the account settings the catalog was priced with
 
+        /// <summary>
+        /// The current account's "additional items in the store" option (Saves.Info.ExtraStore, user 2026-11-02): products
+        /// the original store did not sell. For now the PvE full sets (PveFullSets) and the holiday gift boxes (also found
+        /// in boosters opened during their holiday, Packs); later, items that only Kickstarter tiers or events gave.
+        /// </summary>
+        public static bool ExtraItems { get { return Saves.Current != null && !Saves.Current.UnlockAll && Saves.Current.ExtraStore; } }
+
         /// <summary>A product of the store: what it is, its price, its currency, its tab.</summary>
         private class Product
         {
@@ -192,8 +199,8 @@ namespace HexRevival
             string special = SpecialPacks.KindOf(item);
             // A PvE full set (an account option): next to the set's Full Set.
             if (special == "pvefullset") return PveFullSets.Enabled ? new Product { Item = item, Price = PveFullSets.GoldPrice, Tab = "cardpack" } : null;
-            // The holiday gift boxes are chests that came with opened boosters, not products (Packs; user 2026-11-02).
-            if (special == "giftbox") return null;
+            // The holiday gift boxes came with opened boosters (Packs); they are products only with the additional items.
+            if (special == "giftbox") return ExtraItems ? new Product { Item = item, Price = SpecialPacks.GiftBoxGold, Tab = "special" } : null;
             if (special != null) return new Product { Item = item, Price = SpecialPacks.GoldPrice(special), Tab = special == "common" || special == "fullset" ? "cardpack" : "special" };
             InventoryCardPack pack = item as InventoryCardPack;
             if (pack != null)
@@ -324,6 +331,25 @@ namespace HexRevival
                 r.PurchasedDeckBits.Add(Decks.CreateFromTemplate(item.m_Name, t));
                 foreach (ResourceId id in DeckSleeves(item, t))
                     if (!Sleeves.Owned(id)) { inventory_bits sb = Inventory.GrantSilently(id); if (sb != null) r.GrantedInventory.Add(sb); }
+                return;
+            }
+            if (SpecialPacks.KindOf(item) == "giftbox")
+            {
+                // A bought gift box: opened at once, as the other special products (its holiday's sleeve and equipment).
+                List<Loot.Drop> gift = SpecialPacks.OpenGiftBox(item);
+                foreach (Loot.Drop d in gift)
+                {
+                    inventory_bits b = Inventory.GrantSilently(d.Item);
+                    if (b != null) r.GrantedInventory.Add(b);
+                }
+                if (gift.Count == 0)
+                {
+                    // Nothing left of that holiday: its price back.
+                    int back = GoldOfPlatinum(PlatinumOf(SpecialPacks.GiftBoxGold));
+                    Saves.Current.Gold += back;
+                    Saves.SaveCurrent();
+                    Notices.Show(Loc.Get("giftbox_empty", back.ToString("N0")));
+                }
                 return;
             }
             CardSetTemplate pveSet = PveFullSets.SetOf(item);
