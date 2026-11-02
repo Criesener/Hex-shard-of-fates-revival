@@ -25,8 +25,8 @@ namespace HexRevival
     /// - GenCon 2016 Booster Pack (GenconPack, Herofall): a Herofall booster's cards (PLACEHOLDER);
     /// - Random Previous Kismet Pack: "A random previously released Kismet Pack" (Src.Game): one of the store's Kismet's
     ///   Reserve packs, delivered as that pack;
-    /// - the holiday gift boxes (Harvest of Souls, Night of Bells, Feast of Abundance): one of the holiday's sleeves and
-    ///   equipment pieces not owned yet (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents).
+    /// The holiday gift boxes (Harvest of Souls, Night of Bells, Feast of Abundance) are not sold: they are treasure chests
+    /// that come with opened booster packs (Packs; user 2026-11-02), opened here (OpenGiftBox).
     /// Prices: PLACEHOLDER (see GoldPrice).
     /// </summary>
     public static class SpecialPacks
@@ -61,7 +61,6 @@ namespace HexRevival
                 case "common": return 500;
                 case "trials": case "gauntlet": case "dualshard": case "kismetdraft": case "gencon": return 2000;   // a booster's
                 case "randomkismet": return 20000;   // a Kismet's Reserve pack's
-                case "giftbox": return 5000;
                 default: return 0;
             }
         }
@@ -127,18 +126,6 @@ namespace HexRevival
                     Store.DeliverKismet(kismet[UnityEngine.Random.Range(0, kismet.Count)], r);
                     return true;
                 }
-                case "giftbox":
-                {
-                    string holiday = GiftBoxHoliday(item);
-                    InventoryDeckSleeve sl = Sleeves.Unowned(HolidaySleeves(holiday));
-                    inventory_bits sb = sl != null ? Inventory.GrantSilently(sl.m_Id) : null;
-                    if (sb != null) r.GrantedInventory.Add(sb);
-                    InventoryItemData eq = Sleeves.HolidayEquipment(holiday);
-                    inventory_bits eb = eq != null ? Inventory.GrantSilently(eq.m_Id) : null;
-                    if (eb != null) r.GrantedInventory.Add(eb);
-                    if (sb == null && eb == null) { Saves.Current.Gold += Store.GoldOfPlatinum(Store.PlatinumOf(GoldPrice(kind))); Saves.SaveCurrent(); Notices.Show(Loc.Get("giftbox_empty")); }
-                    return true;
-                }
             }
             foreach (CardTemplate c in cards) if (c != null) r.GrantedCards.AddRange(Collection.GrantSilently(c.m_Id, 1));
             Debug.Log("[HexRevival] [Store] " + item.m_Name + ": " + cards.Count + " card(s)");
@@ -164,6 +151,31 @@ namespace HexRevival
         }
 
         private static CardSetTemplate Any(List<CardSetTemplate> sets) { return sets.Count > 0 ? sets[UnityEngine.Random.Range(0, sets.Count)] : null; }
+
+        /// <summary>The game's holiday gift boxes (treasure chests "... Gift Box" of the game data: promo chests without a spin).</summary>
+        internal static List<InventoryItemData> GiftBoxes()
+        {
+            List<InventoryItemData> res = new List<InventoryItemData>();
+            foreach (InventoryItemData i in Singleton<TemplateManager>.Instance.InventoryItems.Values)
+                if (KindOf(i) == "giftbox") res.Add(i);
+            return res;
+        }
+
+        /// <summary>
+        /// What an opened gift box holds: one of its holiday's sleeves and one of its equipment pieces not owned yet
+        /// (Src.HexCodex, Src.Zymmer; PLACEHOLDER contents). Empty when the player owns them all.
+        /// </summary>
+        internal static List<Loot.Drop> OpenGiftBox(InventoryItemData box)
+        {
+            List<Loot.Drop> res = new List<Loot.Drop>();
+            if (box == null) return res;
+            string holiday = GiftBoxHoliday(box);
+            InventoryDeckSleeve sl = Sleeves.Unowned(HolidaySleeves(holiday));
+            if (sl != null) res.Add(new Loot.Drop { Item = sl.m_Id });
+            InventoryItemData eq = Sleeves.HolidayEquipment(holiday);
+            if (eq != null) res.Add(new Loot.Drop { Item = eq.m_Id });
+            return res;
+        }
 
         /// <summary>A gift box's holiday (Harvest of Souls: the Haunted Harvest, the game's autumn holiday).</summary>
         internal static string GiftBoxHoliday(InventoryItemData item)
