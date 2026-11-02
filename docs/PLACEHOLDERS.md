@@ -146,13 +146,14 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | AiConfig.cs:333 | PLACEHOLDER defenses (the original ones were other players'): 40 for gold, 10 for platinum, each 3 decks with an |
 | AiConfig.cs:394 | Which boss in which tier: PLACEHOLDER (tiers 2-3 share the bosses, tier 4 their elite versions and Hogarth). |
 | Arena.cs:133 | run and fight (which pieces: PLACEHOLDER). |
-| Arena.cs:331 | One fight of each tier but the boss may carry a challenge (Src.HexCompendium; PLACEHOLDER: always one). |
-| Arena.cs:499 | pouch, not always the same). The split by fight is PLACEHOLDER (it gives about 8,500 for such a run). |
-| Arena.cs:507 | "Boss Win" chests (1 in tier 1, 2 after, PLACEHOLDER from the counts seen), a "Perfect Tier Bonus" chest for a |
-| Arena.cs:508 | tier without a loss, a "Bonus" chest (seen twice, cause unknown: PLACEHOLDER, a tier whose challenge was won). |
-| Arena.cs:558 | other sets: half each, PLACEHOLDER), sometimes stardust (Src.Video: "Common Stardust x2", "Rare Stardust"; |
-| Arena.cs:559 | 20% PLACEHOLDER), rarely an arena equipment (Src.Zymmer list, see ArenaEquipment; not seen in 10 chests: 5% PLACEHOLDER). |
-| Arena.cs:586 | A card of the game's booster sets (common 10, uncommon 3, rare 1: PLACEHOLDER weights).</summary> |
+| Arena.cs:383 | One fight of each tier but the boss may carry a challenge (Src.HexCompendium; PLACEHOLDER: always one). |
+| Arena.cs:565 | pouch, not always the same). The split by fight is PLACEHOLDER (it gives about 8,500 for such a run). |
+| Arena.cs:573 | "Boss Win" chests (1 in tier 1, 2 after, PLACEHOLDER from the counts seen), a "Perfect Tier Bonus" chest for a |
+| Arena.cs:574 | tier without a loss, a "Bonus" chest (seen twice, cause unknown: PLACEHOLDER, a tier whose challenge was won). |
+| Arena.cs:624 | other sets: half each, PLACEHOLDER), sometimes stardust (Src.Video: "Common Stardust x2", "Rare Stardust"; |
+| Arena.cs:625 | 20% PLACEHOLDER), rarely an arena equipment (Src.Zymmer list, see ArenaEquipment; not seen in 10 chests: 5% PLACEHOLDER). |
+| Arena.cs:652 | A card of the game's booster sets (common 10, uncommon 3, rare 1: PLACEHOLDER weights).</summary> |
+| Arena.cs:796 | soon as its tunneling count is reached (0 for a card without Tunneling). Which card: PLACEHOLDER (a random troop |
 | Battlegrounds.cs:28 | draft timer are PLACEHOLDER (not known). The client's own screens are driven through its TournamentManager: |
 | Battlegrounds.cs:48 | PLACEHOLDER |
 | Battlegrounds.cs:62 | PLACEHOLDER: the limited gauntlets use the last set's boosters (the server chose the product).</summary> |
@@ -166,9 +167,10 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | CampaignBoat.cs:127 | of a voyage, 1 time in 3 (PLACEHOLDER chance; it fits 2 to 4 calm voyages before). Saves where a sea quest was |
 | CampaignBoat.cs:139 | PLACEHOLDER: chance that Scylla and Charybdis wake at the start of a voyage.</summary> |
 | DuelingPit.cs:21 | chosen deck against another of the five, piloted by the AI with its "- AI" version (which one: PLACEHOLDER, drawn |
-| Dungeons.cs:388 | PLACEHOLDER: the blast's victim plays second |
-| Dungeons.cs:709 | Brutecrown Bluff not played: PLACEHOLDER (Vargar) |
-| Dungeons.cs:732 | seen: their totals (12-13, 14-15) and the limits between the seen ones are PLACEHOLDER. |
+| Dungeons.cs:415 | PLACEHOLDER: the blast's victim plays second |
+| Dungeons.cs:736 | Brutecrown Bluff not played: PLACEHOLDER (Vargar) |
+| Dungeons.cs:759 | seen: their totals (12-13, 14-15) and the limits between the seen ones are PLACEHOLDER. |
+| Dungeons.cs:1204 | it stays (not seen: PLACEHOLDER). |
 | Fortunes.cs:17 | [W__kpqC147U] 0:51, Fortune of Diamond). PLACEHOLDER: how the fortune is drawn (random here; the runs show |
 | Hometown.cs:28 | PLACEHOLDER: the quest giver is shown once the sparring match is won (the client's quest hint follows the sparring |
 | Loot.cs:65 | Dead packs (Src.LootTables2016). Both PLACEHOLDER by analogy. Src.Video agrees for Fort Romor: its packs |
@@ -239,9 +241,9 @@ were server-side or came from other players; only new sources (forums, wiki, dat
 | StoreIcons.cs:22 | "PLACEHOLDER" picture: a related product's banner (see Related); the Random Previous Kismet Pack's missing model |
 | StoreIcons.cs:34 | Banners the game ships as a "PLACEHOLDER" picture (Src.Game, icons.ab): Dead of Winter Primal Pack's. Replaced |
 | StoreIcons.cs:219 | The product whose banner (and model) a product without one shows (PLACEHOLDER, a mod choice: the original |
-| Zymmer.cs:15 | PLACEHOLDER unless noted. |
-| Zymmer.cs:137 | pack (Src.LootTables2016, 1,162 packs). Used for packs the loot tables do not cover (AZ2): PLACEHOLDER by analogy. |
-| Zymmer.cs:288 | card of the set. Which one: PLACEHOLDER, any, evenly (only Set 1's three are reported, and second hand). |
-| Zymmer.cs:348 | alternate art of the set (PLACEHOLDER). |
-| Zymmer.cs:356 | Items per chest: 1, 2 for a legendary chest, 3 for a primal one (the client: "Legendary and Primal chests will have additional items"; how many: PLACEHOLDER).</summary> |
-| Zymmer.cs:493 | What one pack gave (here: the whole theme, once) is PLACEHOLDER. |
+| Zymmer.cs:16 | PLACEHOLDER unless noted. |
+| Zymmer.cs:138 | pack (Src.LootTables2016, 1,162 packs). Used for packs the loot tables do not cover (AZ2): PLACEHOLDER by analogy. |
+| Zymmer.cs:289 | card of the set. Which one: PLACEHOLDER, any, evenly (only Set 1's three are reported, and second hand). |
+| Zymmer.cs:349 | alternate art of the set (PLACEHOLDER). |
+| Zymmer.cs:357 | Items per chest: 1, 2 for a legendary chest, 3 for a primal one (the client: "Legendary and Primal chests will have additional items"; how many: PLACEHOLDER).</summary> |
+| Zymmer.cs:494 | What one pack gave (here: the whole theme, once) is PLACEHOLDER. |

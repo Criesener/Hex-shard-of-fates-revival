@@ -149,6 +149,11 @@ conversation and encounter names (Game) and the videos. Rules:
   each room's foe is its conversation's speaker: Stables → Legionnaire of Gawaine, Barracks →
   Rhonwen, Command Post → Commander Hawthorne; the Defense (3 battles: Lords Benjamin, Alexander,
   Adam) opens once the three are taken.
+  Before each Defense battle the battle panel offers the defences won (Video: Vandersveldt parts 68-69,
+  "CHOOSE A CARD TO BE USED IN YOUR NEXT BATTLE"): Stables → Hellshot Catapult, Barracks → Sniper Tower,
+  Command Post → Castle Wall (+ three Burning Oils) (Game: the rooms' Success conversations and the
+  "Choose ..." cards). The chosen one is summoned for the player at the start of the battle and is gone once
+  that battle is won (part 69); after a lost battle it stays (not seen, PLACEHOLDER).
 - Taming battles ("Tame X and win match", the Tamed quest): won without taming the creature (the Taming
   Sphere's 2-mana ability only has a 50% chance, Game), the battle stays available to fight again.
 - Taming objectives count in the battles whose encounter mods hold the "Taming X" card (Src.Game: EncounterScene
