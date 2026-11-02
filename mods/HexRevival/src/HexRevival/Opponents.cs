@@ -234,6 +234,13 @@ namespace HexRevival
         private static Handicap s_ExtraAI, s_ExtraPlayer, s_BattleExtraAI, s_BattleExtraPlayer;
 
         /// <summary>The opponent of the next match started (its skill and handicaps), and a mode's own extras (arena challenges, buffs).</summary>
+        /// <summary>
+        /// A mode's own setup for the next match (the arena's challenges that use the game's encounter modifiers), run
+        /// once after the handicaps with the session, the AI and the player. Not saved with the handicaps.
+        /// </summary>
+        public static Action<StandaloneSession, Player, Player> NextSetup;
+        private static Action<StandaloneSession, Player, Player> s_BattleSetup;
+
         public static void SetNext(Opponent o, Handicap extraAI = null, Handicap extraPlayer = null)
         {
             s_Pending = o;
@@ -247,6 +254,8 @@ namespace HexRevival
             s_InBattle = s_Pending;
             s_BattleExtraAI = s_ExtraAI;
             s_BattleExtraPlayer = s_ExtraPlayer;
+            s_BattleSetup = NextSetup;
+            NextSetup = null;
             s_Pending = null;
             s_ExtraAI = s_ExtraPlayer = null;
             s_Applied = false;
@@ -268,11 +277,18 @@ namespace HexRevival
         /// <summary>Every server update: the handicaps, once the mulligan is over.</summary>
         public static void OnSessionTick(StandaloneSession ss)
         {
-            if (s_Applied || (s_InBattle == null && s_BattleExtraAI == null && s_BattleExtraPlayer == null) || ss == null || (int)ss.CurrentTurnPhase <= (int)ETurnPhases.Mulligan) return;
+            if (s_Applied || (s_InBattle == null && s_BattleExtraAI == null && s_BattleExtraPlayer == null && s_BattleSetup == null) || ss == null || (int)ss.CurrentTurnPhase <= (int)ETurnPhases.Mulligan) return;
             s_Applied = true;
             s_FirstTurn.Clear();
             Apply(ss, Cheats.FindPlayer(ss, "ai"), Handicap.Add(s_InBattle != null ? s_InBattle.AI : null, s_BattleExtraAI));
             Apply(ss, Cheats.FindPlayer(ss, "j"), Handicap.Add(s_InBattle != null ? s_InBattle.Player : null, s_BattleExtraPlayer));
+            if (s_BattleSetup != null)
+            {
+                Action<StandaloneSession, Player, Player> setup = s_BattleSetup;
+                s_BattleSetup = null;
+                try { setup(ss, Cheats.FindPlayer(ss, "ai"), Cheats.FindPlayer(ss, "j")); Server.MarkDirty(); }
+                catch (Exception e) { Debug.LogError("[HexRevival] [Opponents] match setup: " + e); }
+            }
         }
 
         /// <summary>Resources waiting for their player's first main phase (TempResources), by player.</summary>

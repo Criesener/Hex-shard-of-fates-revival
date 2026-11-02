@@ -149,6 +149,11 @@ conversation and encounter names (Game) and the videos. Rules:
   each room's foe is its conversation's speaker: Stables → Legionnaire of Gawaine, Barracks →
   Rhonwen, Command Post → Commander Hawthorne; the Defense (3 battles: Lords Benjamin, Alexander,
   Adam) opens once the three are taken.
+  Before each Defense battle the battle panel offers the defences won (Video: Vandersveldt parts 68-69,
+  "CHOOSE A CARD TO BE USED IN YOUR NEXT BATTLE"): Stables → Hellshot Catapult, Barracks → Sniper Tower,
+  Command Post → Castle Wall (+ three Burning Oils) (Game: the rooms' Success conversations and the
+  "Choose ..." cards). The chosen one is summoned for the player at the start of the battle and is gone once
+  that battle is won (part 69); after a lost battle it stays (not seen, PLACEHOLDER).
 - Taming battles ("Tame X and win match", the Tamed quest): won without taming the creature (the Taming
   Sphere's 2-mana ability only has a 50% chance, Game), the battle stays available to fight again.
 - Taming objectives count in the battles whose encounter mods hold the "Taming X" card (Src.Game: EncounterScene
@@ -265,6 +270,11 @@ Install Ruby Mainline" once the ruby mainline is found). Mechanics and their sou
   "No Frog" scene appear in no run and are not used).
 - Faction nodes: the template's Node023A/B and Node026A/B are one map node each (Node023, Node026),
   the battle chosen by the faction and, at Node023, the help / no help answer.
+- Quest order: a giver offers Army of Myth and Gnomes Come Home once Tranquil Dream is done, Fort Romor / The
+  Usurper once Army of Myth is done, the Smoldering Dead once both are done, Devonshire Keep after the Smoldering
+  Dead, River of Whispers (AZ2) after Fort Romor / The Usurper (HexServer: the givers' prerequisites read on the
+  playthroughs; Video: the three runs of the chronology agree). Not used: their "Blood Beneath after Tamed"
+  (Vandersveldt started Blood Beneath in part 31 and finished Tamed in part 59).
 - AZ2 is reached by the boat of "River of Whispers" (AZ1 Node00Y, see the AZ2 section).
 
 The dev command `sim` plays a quest script on a throwaway champion (e.g. `sim new Human; visit
@@ -534,7 +544,7 @@ the end, and single fights).
 | Tier 1 | its own opponents, 7 less health (the game's 15-health arena decks), the Eternal Guardian as boss | HexCompendium, Game, Video |
 | Opponents | drawn at random for each run; an elite is a stronger version of a standard opponent | Video |
 | Loss marks | a lost fight is passed (red X) and its mark counts until the tier's boss is beaten; a lost boss is fought again and its mark stays; 3 marks end the run; a tier won without a loss takes off a boss's mark ("Remove strikes by Perfecting a Tier, or completing Hogarth's Challenges") | Video (the defeats counter of several runs); HexCompendium (3 marks); HexCodex (perfect tier) |
-| Challenges | one fight of each tier: Reflection (both players start with Locket of Reflection in play), Primordial (the opponent starts with Primordial Caves in play), Gooplasm (with a Gooplasm), Fulmination (with Cerebral Fulmination); Inferno (each champion starts with Inferno in play), The Pacts (each starts with Pact of Life or Pact of Pain), Shards Aplenty (each gets at random 2 temporary, 2 permanent, or 1 and 1 resources: [2/0], [0/2], [1/1] read as temporary/permanent), The Ol' Switcheroo (the player plays the opponent's deck, champion and equipment, the AI the player's); goal: win the game | Video (the first four); Game (Hogarth's challenges, ArenaPVE_Challenge texts, shown in the game's words); one per tier always: PLACEHOLDER |
+| Challenges | one fight of each tier: Reflection (both players start with Locket of Reflection in play), Primordial (the opponent starts with Primordial Caves in play), Gooplasm (with a Gooplasm), Fulmination (with Cerebral Fulmination); Inferno (each champion starts with Inferno in play), The Pacts (each starts with Pact of Life or Pact of Pain), Shards Aplenty (each gets at random 2 temporary, 2 permanent, or 1 and 1 resources: [2/0], [0/2], [1/1] read as temporary/permanent), The Ol' Switcheroo (the player plays the opponent's deck, champion and equipment, the AI the player's); goal: win the game; and Hogarth's eight other challenge conversations of the game data (Challenge02-10, his line and objective shown, effects with the game's encounter modifiers): Command Tower (the opponent starts with one in play), Tunneling (a secret tunneled card of the opponent's deck, which: PLACEHOLDER a random troop), Booby Traps (six Booby Traps shuffled into each deck), Soothing Song (the opponent gains 7 health and draws two cards), Mastery of Time and Headless Executioner (played for the opponent), Incantation (an Arena Incantation played for each), Shrine of Prosperity (the opponent starts with it in play) | Video (the first four); Game (Hogarth's challenges, ArenaPVE_Challenge texts, shown in the game's words); one per tier always: PLACEHOLDER |; Game (Hogarth's Challenge01-10 conversations)
 | Challenge won | removes a loss mark, otherwise a buff for the next boss: Brawler (an Arena Brawler in play), Charge (+2 charges), Health (+5 health), Resource (a resource in play) | HexCompendium, Video (Brawler) |
 | Uruunaz, Zakiir | rare encounters on the 4th fight of tier 2 and on the fights of tiers 3 and 4 but the bosses (Uruunaz seen at slot 13); chance 2% | HexCompendium, Video; chance PLACEHOLDER |
 | Which boss in which tier | tiers 2-3 share the 30-health bosses, tier 4 takes their elite versions and Hogarth (seen: Lanupaw tier 2, Uzume tier 3, Princess Cory Elite and Doombringer Kha Elite tier 4) | PLACEHOLDER, Video |
@@ -547,7 +557,12 @@ the end, and single fights).
 | Opponents' equipment | "Tier 1: Champions in this Tier each use no equipment. Tier 2: [...] 2 equipment", 3 in tier 3, 4 in tier 4; pieces that modify cards of the opponent's deck (the cards' own equipment lists), one per slot, drawn once per run and fight | HexCodex (the arena's text); which pieces PLACEHOLDER (the game's arena decks carry none) |
 | Resource buff | 1 temporary resource (for the first turn) and 1 permanent resource | HexCodex |
 
-Not done: the buyout, Hogarth's dialogues, Hogarth's challenge window (the client's is the consoles' one, without
+**Skip Tier 1** (Game: the client's buyout button, UIArenaCampaignViewModel.SetBuyoutButton, and its texts): shown on
+a new run (no win, no loss, fight in tier 1) once the account has the flag ARENA_TIER1_PERFECT, earned here by winning
+tier 1 without a loss (the flag's name; when the original servers set it is not known otherwise). Confirming skips the
+five tier 1 fights ("SKIP" on the grid) "You will not receive rewards for battles skipped this way"; no price.
+
+Not done: Hogarth's dialogues, Hogarth's challenge window (the client's is the consoles' one, without
 buttons on PC: a challenge is told at the start of its fight), the challenges that change every card's values (Swarm!
 Swarm!, Rage, Charge!) or play an action for free (The Primal of Luck, Infernal Professor).
 

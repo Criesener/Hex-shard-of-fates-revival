@@ -22,8 +22,8 @@ namespace HexRevival
     /// A run (Src.HexCompendium, "Frost Ring Arena"; the client's screens): 20 fights in 4 tiers of 5, a boss closing
     /// each tier; tier 1: 4 standard fights; tier 2: 3 standard, 1 elite; tiers 3 and 4: 2 standard, 2 elite, tier 4's
     /// boss an elite. Loss marks and challenges: see OnGameEnded. The opponents come from the account's opponent pack
-    /// (arena tiers, see Opponents): by default the game's own "Arena_" decks. Rewards: see Rewards. Not done: the
-    /// buyout, Hogarth's dialogues.
+    /// (arena tiers, see Opponents): by default the game's own "Arena_" decks. Rewards: see Rewards. The client's
+    /// "Skip Tier 1" button: see Buyout. Not done: Hogarth's dialogues.
     /// </summary>
     public static class Arena
     {
@@ -211,6 +211,7 @@ namespace HexRevival
         {
             // A notification flag left on by a window of a previous visit would queue every later window (the
             // cash out among them) forever; the loot to show is kept in the client's own loot list.
+            RefreshFlags(GameClient.Instance.PlayerProfile);
             ArenaClient client = Singleton<ArenaClient>.Instance;
             client.m_UINotificationActive = false;
             client.m_UINotificationQueue.Clear();
@@ -256,6 +257,57 @@ namespace HexRevival
                 res.FightHistory = r.Fights;
             }
             LocalServer.Answer(typeof(CampaignService.RefreshArenaInfo), res, handler);
+        }
+
+        // ------------------------------------------------------------------
+        // Skip Tier 1 (the client's buyout)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Src.Game: the arena screen shows its "Skip Tier 1" button (UIArenaCampaignViewModel.SetBuyoutButton) when the
+        /// account has the flag ARENA_TIER1_PERFECT and the run is not a buyout already, has no win and no loss, and its
+        /// fight is in tier 1. Its confirmation (ArenaPVE_Buyout_Confirm_Body): "Are you sure you want to skip the Tier 1
+        /// battles? You will not receive rewards for battles skipped this way." No price. The client shows the skipped
+        /// fights as "SKIP" (UIArenaTierGroupContext). The flag is earned by winning tier 1 without a loss (its name: when
+        /// exactly the original servers set it is not known otherwise). Also noted by hex-server (IanUtley/hex-server).
+        /// </summary>
+        private const string Tier1PerfectFlag = "ARENA_TIER1_PERFECT", Tier1PerfectClaim = "arena:tier1perfect";
+
+        private static bool HasTier1Perfect { get { return Saves.Current != null && Saves.Current.Claims.Contains(Tier1PerfectClaim); } }
+
+        /// <summary>Login and arena screen: the account's arena flag to the client.</summary>
+        public static void RefreshFlags(PlayerProfile profile)
+        {
+            if (profile == null || !HasTier1Perfect) return;
+            try { profile.UpdateSingleUserFlag(new Reckoning.Profile.Messages.FlagData { Name = Tier1PerfectFlag, Progress = 1, Maximum = 1, Completed = true }); }
+            catch (Exception e) { Debug.LogWarning("[HexRevival] [Arena] flag: " + e.Message); }
+        }
+
+        /// <summary>CampaignService.BuyoutArena: the run's tier 1 fights are skipped, without their rewards.</summary>
+        public static void Buyout(Delegate handler)
+        {
+            Run r = Current;
+            BuyoutArenaResponse res = LocalServer.Ok<BuyoutArenaResponse>();
+            res.ErrorMessage = "";
+            bool ok = r != null && HasTier1Perfect && !r.Info.IsBuyout && r.Info.Wins == 0 && r.Info.Loses == 0 && r.Current < PerTier;
+            if (ok)
+            {
+                for (int i = 0; i < PerTier; i++) r.Fights[i].FightResults = "SKIP";
+                r.Current = PerTier;
+                r.Info.IsBuyout = true;
+                r.Info.FightId = r.Fights[r.Current].FightID;
+                Save();
+            }
+            res.Success = ok;
+            if (r != null)
+            {
+                res.ArenaInfo = r.Info;
+                res.EncounterData = r.Fights[r.Current];
+                res.ChallengerData = ChallengerOf(r, r.Current);
+                res.FightHistory = r.Fights;
+            }
+            Debug.Log("[HexRevival] [Arena] skip tier 1: " + (ok ? "done" : "refused"));
+            LocalServer.Answer(typeof(CampaignService.BuyoutArena), res, handler);
         }
 
         public static void MasterList(Delegate handler)
@@ -367,7 +419,15 @@ namespace HexRevival
             {
                 Challenge c = Challenges[ch];
                 c.Draw(out ai, out me);
-                Notices.Show(Loc.Get("arena_goal", c.Name, c.Text));
+                if (c.Conversation != null)
+                {
+                    // Hogarth's line, then the objective as the game's conversation shows it ("... Goal: Win the game.").
+                    string[] conv = ConversationTexts(c.Conversation);
+                    if (conv != null && conv[0] != "") Notices.Show("Hogarth: " + conv[0]);
+                    Notices.Show(c.Name + ": " + c.Text);
+                }
+                else Notices.Show(Loc.Get("arena_goal", c.Name, c.Text));
+                Opponents.NextSetup = c.Setup;
                 if (c.Swap && deck != null)
                 {
                     // The Ol' Switcheroo: the player plays the opponent's deck, champion and equipment, the AI the player's.
@@ -424,6 +484,12 @@ namespace HexRevival
                 // "Remove strikes by Perfecting a Tier, or completing Hogarth's Challenges" (Src.HexCodex, the arena's
                 // own text): a tier won without a loss takes off a boss's loss mark (the only marks left by then).
                 if (boss && (r.Info.LastTierLoss & (1 << f.FightTier)) == 0 && r.BossLosses > 0) r.BossLosses--;
+                // Tier 1 won without a loss: the account's ARENA_TIER1_PERFECT flag (see Buyout).
+                if (boss && f.FightTier == 1 && (r.Info.LastTierLoss & (1 << 1)) == 0 && Saves.Current != null && Saves.Current.Claims.Add(Tier1PerfectClaim))
+                {
+                    Saves.SaveCurrent();
+                    RefreshFlags(GameClient.Instance.PlayerProfile);
+                }
                 if (boss) { r.TierLosses = 0; r.Buffs.Clear(); r.BonusChest = false; }
                 if (r.Current < Fights - 1) r.Current++;
             }
@@ -645,12 +711,29 @@ namespace HexRevival
             public bool Swap;
             /// <summary>One of Hogarth's challenges of the game's texts (ArenaPVE_Challenge_Header/Body n), 0 for the ones seen on video.</summary>
             public int GameText;
+            /// <summary>
+            /// One of Hogarth's challenge conversations of the game data ("Challenge02 - Command Tower"): its line and its
+            /// objective (UIEventShowObjectivePanel) are shown, and Setup applies its effect with the game's own encounter
+            /// modifiers once the mulligan is over (Opponents.NextSetup).
+            /// </summary>
+            public string Conversation;
+            public Action<StandaloneSession, Player, Player> Setup;
             /// <summary>In the game's language (the card's name as the game shows it).</summary>
-            public string Name { get { return GameText > 0 ? Localization.Get("ArenaPVE_Challenge_Header" + GameText) : Loc.Get("arena_ch_" + Key); } }
+            public string Name
+            {
+                get
+                {
+                    string[] conv = Conversation != null ? ConversationTexts(Conversation) : null;
+                    if (conv != null && conv[1] != "") return conv[1];
+                    return GameText > 0 ? Localization.Get("ArenaPVE_Challenge_Header" + GameText) : Loc.Get("arena_ch_" + Key);
+                }
+            }
             public string Text
             {
                 get
                 {
+                    string[] conv = Conversation != null ? ConversationTexts(Conversation) : null;
+                    if (conv != null) return conv[2];
                     if (GameText > 0) return Localization.Get("ArenaPVE_Challenge_Body" + GameText).Replace("[b]", "").Replace("[/b]", "").Replace("\\n", " ").Replace("\n", " ");
                     return Loc.Get(Player != null ? "arena_ch_reflection_text" : "arena_ch_opponent_text", CardName(Card));
                 }
@@ -703,8 +786,74 @@ namespace HexRevival
                     return new Opponents.Handicap { TempResources = k == 0 ? 2 : k == 2 ? 1 : 0, Resources = k == 1 ? 2 : k == 2 ? 1 : 0 };
                 } } },
             { "switcheroo", new Challenge { Key = "switcheroo", GameText = 7, Swap = true } },
+            // Hogarth's challenge conversations (Src.Game: "Challenge01" to "Challenge10", owner Hogarth, each with its line
+            // and objective). 01 Cerebral Fulmination and 03 Inferno are the ones above; the eight others below, their
+            // effect read from their objective and applied with the game's encounter modifiers (EncounterModAddCard and
+            // the session calls it uses). Also listed by hex-server (IanUtley/hex-server, AssetExtraction/populate_fra_challenges.py).
+            { "commandtower", new Challenge { Key = "commandtower", Conversation = "Challenge02 - Command Tower",
+                AI = new Opponents.Handicap { InPlay = new List<string> { "Command Tower" } } } },
+            // "Your opponent starts this game with a secret tunneled card in play": a card of its deck tunneled; it surfaces as
+            // soon as its tunneling count is reached (0 for a card without Tunneling). Which card: PLACEHOLDER (a random troop
+            // of the opponent's deck, else any card).
+            { "tunneling", new Challenge { Key = "tunneling", Conversation = "Challenge04 - Tunneling", Setup = (ss, ai, me) => TunnelRandom(ss, ai) } },
+            // "You and your opponent now have six Booby Traps in each of your decks."
+            { "boobytraps", new Challenge { Key = "boobytraps", Conversation = "Challenge05 - Booby Traps", Setup = (ss, ai, me) => { AddCards(ss, ai, "Booby Trap", 6, ECardCollections.Deck); AddCards(ss, me, "Booby Trap", 6, ECardCollections.Deck); } } },
+            // "Your opponent gained 7 health and drew two cards."
+            { "soothingsong", new Challenge { Key = "soothingsong", Conversation = "Challenge06 - Soothing Song",
+                AI = new Opponents.Handicap { Health = 7, Cards = 2 } } },
+            // "Your opponent played Mastery of Time." / "Your opponent played a Headless Executioner.": the card is played for
+            // the opponent without cost (EncounterModAddCard, collection CastSpells).
+            { "masteryoftime", new Challenge { Key = "masteryoftime", Conversation = "Challenge07 - Mastery of Time", Setup = (ss, ai, me) => AddCards(ss, ai, "Mastery of Time", 1, ECardCollections.CastSpells) } },
+            // "You and your opponent each start the game with an Incantation in play": the game's AI-only card "Arena Incantation", played for each.
+            { "incantation", new Challenge { Key = "incantation", Conversation = "Challenge08 - Incantation", Setup = (ss, ai, me) => { AddCards(ss, ai, "Arena Incantation", 1, ECardCollections.CastSpells); AddCards(ss, me, "Arena Incantation", 1, ECardCollections.CastSpells); } } },
+            { "prosperity", new Challenge { Key = "prosperity", Conversation = "Challenge09 - Shrine of Prosperity",
+                AI = new Opponents.Handicap { InPlay = new List<string> { "Shrine of Prosperity" } } } },
+            { "headless", new Challenge { Key = "headless", Conversation = "Challenge10 - Headless Executioner", Setup = (ss, ai, me) => AddCards(ss, ai, "Headless Executioner", 1, ECardCollections.CastSpells) } },
         };
-        private static readonly string[] ChallengeKeys = { "reflection", "primordial", "gooplasm", "fulmination", "inferno", "pacts", "shards", "switcheroo" };
+
+        /// <summary>The game's EncounterModAddCard for a player: cards into a zone (a deck is shuffled after), or played for free (CastSpells).</summary>
+        private static void AddCards(StandaloneSession ss, Player p, string name, int amount, ECardCollections zone)
+        {
+            CardTemplate c = Opponents.CardByName(name);
+            if (ss == null || p == null || c == null) { Debug.LogWarning("[HexRevival] [Arena] challenge card not found: " + name); return; }
+            new EncounterModAddCard { m_CardId = c.m_Id, m_Amount = amount, m_Collection = zone, m_Location = ECardLocations.Unknown, m_Shuffle = zone == ECardCollections.Deck }.Apply(ss, p);
+            Debug.Log("[HexRevival] [Arena] challenge: " + amount + " " + name + " to " + zone + " for " + p.m_PlayerId);
+        }
+
+        /// <summary>Tunneling challenge: a card of the player's deck goes underground (the session's TunnelCard).</summary>
+        private static void TunnelRandom(StandaloneSession ss, Player p)
+        {
+            if (ss == null || p == null || p.m_Deck == null || p.m_Deck.m_Cards.Count == 0) return;
+            List<Card> troops = p.m_Deck.m_Cards.FindAll(x => x != null && x.IsTroop());
+            List<Card> from = troops.Count > 0 ? troops : p.m_Deck.m_Cards;
+            Card card = from[UnityEngine.Random.Range(0, from.Count)];
+            ss.TunnelCard(card, new TAC());
+            Debug.Log("[HexRevival] [Arena] challenge: " + card.m_CardTemplate.m_Name + " tunneled for " + p.m_PlayerId);
+        }
+
+        /// <summary>A challenge conversation's line and objective (heading, text), from the game data; null if not found.</summary>
+        private static string[] ConversationTexts(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            foreach (Reckoning.Game.Conversations.ConversationTemplate t in Singleton<TemplateManager>.Instance.ConversationTemplates.Values)
+            {
+                if (t == null || t.m_Name == null || t.m_Name.Trim() != name) continue;
+                string line = "", heading = "", text = "";
+                Reckoning.Game.Conversations.ConversationQuestion q;
+                if (t.m_Questions.TryGetValue(t.m_StartingQuestionId, out q) && q != null) line = q.m_QuestionText ?? "";
+                foreach (Reckoning.Game.Conversations.ConversationAnswer a in t.m_Answers.Values)
+                    if (a != null && a.m_EventsToFireWhenSelected != null)
+                        foreach (object ev in a.m_EventsToFireWhenSelected)
+                        {
+                            Game.Shared.Challenge.Restriction.UIEventShowObjectivePanel op = ev as Game.Shared.Challenge.Restriction.UIEventShowObjectivePanel;
+                            if (op != null) { heading = op.m_ObjectiveHeading; text = op.m_ObjectiveText; }
+                        }
+                return new[] { line, heading, text };
+            }
+            return null;
+        }
+        private static readonly string[] ChallengeKeys = { "reflection", "primordial", "gooplasm", "fulmination", "inferno", "pacts", "shards", "switcheroo",
+            "commandtower", "tunneling", "boobytraps", "soothingsong", "masteryoftime", "incantation", "prosperity", "headless" };
 
         private class BuffDef { public ArenaBuff Shown; public Opponents.Handicap Effect; }
 
@@ -775,6 +924,12 @@ namespace HexRevival
             Run r = Current;
             switch (sub)
             {
+                case "tier1perfect":   // dev: the account's ARENA_TIER1_PERFECT flag, as if tier 1 had been won without a loss
+                    if (Saves.Current == null) return "no account";
+                    Saves.Current.Claims.Add(Tier1PerfectClaim);
+                    Saves.SaveCurrent();
+                    RefreshFlags(GameClient.Instance.PlayerProfile);
+                    return "ARENA_TIER1_PERFECT set: the arena screen shows \"Skip Tier 1\" on a new run (no win, no loss yet)";
                 case "decks":   // dev: the game's arena decks: champion, health, equipment count, and the challenge cards found
                     {
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();

@@ -129,6 +129,8 @@ namespace HexRevival
             // Home before (Vincent: "Here, take this with you"), so the key may be that reward: not enough to lock the gate.
             // Not The Blood Beneath (the Blood Key's quest): the quest tracker still shows it at both visits (MHS maplabels
             // 0:40 / 0:46). No dialogue and no item of the game data names where the Sapphire Key comes from.
+            // Not The Three Braves either (IanUtley/hex-server's trigger, unsourced): Vandersveldt passes the gate in part 63 (0:54)
+            // and turns that quest in only in part 65 (1:33).
             { "Node073", new[] { R("Sapphire Gate - Step 2", c => true) } },
             // Brink Ridge blockade, Bungle in the Jungle (gnomes), Blood Gate.
             { "Node019", new[] {

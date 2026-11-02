@@ -704,7 +704,15 @@ namespace HexRevival
         {
             switch (script)
             {
-                case "q_smoldering_dead": return IsFinished(champ, "q_army_of_myth");
+                // AZ1 quest order (Src.HexServer: the givers' prerequisites read on the Ardent and Underworld playthroughs,
+                // IanUtley/hex-server docs/CAMPAIGN.md "AZ1 quest dependencies"; Src.Video: every run of the chronology
+                // agrees, Vandersveldt, MHS Underworld, MHS Ardent): Army of Myth and Gnomes Come Home after Tranquil Dream,
+                // the faction dungeon after Army of Myth, the Smoldering Dead after both.
+                case "q_army_of_myth":
+                case "q_gnomes_come_home": return IsFinished(champ, "q_tranquil_dream");
+                case "az01_q_usurper":
+                case "az01_q_fort_romor": return IsFinished(champ, "q_army_of_myth");
+                case "q_smoldering_dead": return IsFinished(champ, "q_army_of_myth") && (IsFinished(champ, "az01_q_fort_romor") || IsFinished(champ, "az01_q_usurper"));
                 case "q_devonshire_keep": return IsFinished(champ, "q_smoldering_dead");
                 case "q_go_to_az2": return IsFinished(champ, "az01_q_fort_romor") || IsFinished(champ, "az01_q_usurper");
                 // Src.Game: Blue Sparrow's and Renner's "The New Land Quest Start" thank the champion for the Kraken.
