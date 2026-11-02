@@ -24,6 +24,7 @@ namespace HexRevival
         private bool m_GoldPrices = true;
         private bool m_AllGems;
         private bool m_Crafting;
+        private bool m_PveFullSets;
         private string m_StartGold = "0", m_StartPlatinum = "0";
         private string m_GoldPerPlatinum = Store.DefaultGoldPerPlatinum.ToString(), m_GoldDivisor = "1";
         private Vector2 m_CreateScroll;
@@ -184,7 +185,7 @@ namespace HexRevival
             {
                 m_Screen = Screen.Create;
                 m_Name = ""; m_Unlock = false; m_Tutorial = true; m_Error = null;
-                m_GoldPrices = true; m_StartGold = "0"; m_StartPlatinum = "0"; m_AllGems = false; m_Crafting = false;
+                m_GoldPrices = true; m_StartGold = "0"; m_StartPlatinum = "0"; m_AllGems = false; m_Crafting = false; m_PveFullSets = false;
                 m_GoldPerPlatinum = Store.DefaultGoldPerPlatinum.ToString(); m_GoldDivisor = "1"; m_CreateScroll = Vector2.zero;
             }
             y += newH + gap;
@@ -257,6 +258,8 @@ namespace HexRevival
                 y += 78 * S;
                 m_Crafting = Checkbox(new Rect(0, y, w, 66 * S), m_Crafting, Loc.Get("opt_crafting"), Loc.Get("opt_crafting_desc"));
                 y += 78 * S;
+                m_PveFullSets = Checkbox(new Rect(0, y, w, 66 * S), m_PveFullSets, Loc.Get("opt_pvefullsets"), Loc.Get("opt_pvefullsets_desc"));
+                y += 78 * S;
                 float half = (w - 20 * S) / 2f;
                 m_StartGold = NumberField(new Rect(0, y, half, 70 * S), Loc.Get("start_gold"), m_StartGold, "hexrevival_start_gold");
                 m_StartPlatinum = NumberField(new Rect(half + 20 * S, y, half, 70 * S), Loc.Get("start_platinum"), m_StartPlatinum, "hexrevival_start_platinum");
@@ -281,7 +284,7 @@ namespace HexRevival
                 string name = (m_Name ?? "").Trim();
                 m_Error = Saves.CheckName(name);
                 if (m_Error == null) Play(Saves.Create(name, m_Unlock, m_Tutorial, m_GoldPrices, Amount(m_StartGold), Amount(m_StartPlatinum), m_AllGems, m_Crafting,
-                    Factor(m_GoldPerPlatinum), Factor(m_GoldDivisor)));
+                    Factor(m_GoldPerPlatinum), Factor(m_GoldDivisor), m_PveFullSets));
             }
         }
 

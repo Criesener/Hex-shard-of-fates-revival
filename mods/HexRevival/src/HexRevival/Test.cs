@@ -1145,6 +1145,7 @@ namespace HexRevival
                         return "champion " + champ + ": " + o.Count + " member(s), " + pp.GetUnlockedPartySlots() + " slot(s)" + (o.Count > 0 ? ": " + string.Join(", ", o.ToArray()) : "");
                     }
                 case "redeem": return Redeem.Command(parts);
+                case "pvefullset": return PveFullSets.Describe();   // dev: each set's PvE full set contents
                 case "store":
                     if (parts.Length > 1 && parts[1] == "pools") return PrizePacks.Describe();
                     if (parts.Length > 1 && parts[1] == "products") return Store.Products(parts.Length > 2 ? string.Join(" ", parts, 2, parts.Length - 2) : "");
