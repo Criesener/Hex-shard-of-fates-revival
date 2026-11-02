@@ -265,6 +265,11 @@ Install Ruby Mainline" once the ruby mainline is found). Mechanics and their sou
   "No Frog" scene appear in no run and are not used).
 - Faction nodes: the template's Node023A/B and Node026A/B are one map node each (Node023, Node026),
   the battle chosen by the faction and, at Node023, the help / no help answer.
+- Quest order: a giver offers Army of Myth and Gnomes Come Home once Tranquil Dream is done, Fort Romor / The
+  Usurper once Army of Myth is done, the Smoldering Dead once both are done, Devonshire Keep after the Smoldering
+  Dead, River of Whispers (AZ2) after Fort Romor / The Usurper (HexServer: the givers' prerequisites read on the
+  playthroughs; Video: the three runs of the chronology agree). Not used: their "Blood Beneath after Tamed"
+  (Vandersveldt started Blood Beneath in part 31 and finished Tamed in part 59).
 - AZ2 is reached by the boat of "River of Whispers" (AZ1 Node00Y, see the AZ2 section).
 
 The dev command `sim` plays a quest script on a throwaway champion (e.g. `sim new Human; visit
