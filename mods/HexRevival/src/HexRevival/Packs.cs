@@ -520,6 +520,26 @@ namespace HexRevival
             return inv;
         }
 
+        /// <summary>
+        /// A campaign pack bought in the store, given to the client as at login (LoadClient): its chest and its inventory
+        /// line. Sent in the purchase's inventory instead, it did not show on the Pack Opening screen until the next login.
+        /// </summary>
+        public static void ShowChest(ulong id)
+        {
+            Chest c;
+            if (!s_Chests.TryGetValue(id, out c)) return;
+            LocalServer.Later(() =>
+            {
+                try
+                {
+                    PlayerProfile profile = GameClient.Instance.PlayerProfile;
+                    profile.AddChestItem(c.Id, Bits(c));
+                    profile.AddInventoryItem(new UID(UID.Type.InventoryItem, c.Id), c.Template, 1);
+                }
+                catch (Exception e) { Debug.LogWarning("[HexRevival] [Packs] chest " + id + " to the client: " + e.Message); }
+            });
+        }
+
         private static string s_Loaded;
 
         private static void Load()

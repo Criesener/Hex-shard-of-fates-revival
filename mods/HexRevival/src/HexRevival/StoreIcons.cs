@@ -125,6 +125,43 @@ namespace HexRevival
             return new[] { new Layer(wrapper, new Rect(x0, y0, x1 - x0, (x1 - x0) / 2f), new Rect(1024 - 30 - 512, 0, 512, 256), true) };
         }
 
+        /// <summary>
+        /// The campaign dungeon packs (sold with the additional items, user 2026-11-02), which have no banner of their own
+        /// (the Howling Plains and Alachian Sea packs have one): the art of their wrapper (Src.Game, icons.ab), by pack
+        /// (Loot.CampaignPacks), with the top of its band (y0; the same width for all, 0.19 to 0.81). Which band: a mod choice.
+        /// </summary>
+        private static readonly Dictionary<string, KeyValuePair<string, float>> CampaignWrappers = new Dictionary<string, KeyValuePair<string, float>>
+        {
+            { "Tranquil Dream", new KeyValuePair<string, float>("BoosterPack_Dungeon_TranquilDream", 0.21f) },
+            { "Fort Romor", new KeyValuePair<string, float>("BoosterPack_Dungeon_FortRomor", 0.13f) },
+            { "The Usurper", new KeyValuePair<string, float>("BoosterPack_Dungeon_TheUsurper", 0.13f) },
+            { "Smoldering Dead", new KeyValuePair<string, float>("BoosterPack_Dungeon_SmolderingDead", 0.13f) },
+            { "Devonshire Keep", new KeyValuePair<string, float>("BoosterPack_Dungeon_DevonshireKeep", 0.13f) },
+            { "Brutecrown Bluff", new KeyValuePair<string, float>("BoosterPack_Dungeon_BruteCrownBluff", 0.13f) },
+            { "Great Machine Graveyard", new KeyValuePair<string, float>("BoosterPack_GreatMachineGraveyard", 0.13f) },
+            { "The Kraken", new KeyValuePair<string, float>("BoosterPack_Dungeon_KrakenCove", 0.13f) },
+            { "Ruins of Kukatan", new KeyValuePair<string, float>("BoosterPack_Dungeon_RuinsOfKukatan", 0.13f) },
+        };
+
+        private static Dictionary<string, Layer[]> s_CampaignArt;
+
+        /// <summary>A campaign pack's banner layers by its item's texture (null: not a pack of CampaignWrappers).</summary>
+        private static Layer[] CampaignArt(string tex)
+        {
+            if (s_CampaignArt == null)
+            {
+                s_CampaignArt = new Dictionary<string, Layer[]>(StringComparer.OrdinalIgnoreCase);
+                foreach (InventoryItemData i in Singleton<TemplateManager>.Instance.InventoryItems.Values)
+                {
+                    string camp = Loot.PackOf(i);
+                    KeyValuePair<string, float> w;
+                    if (camp != null && !string.IsNullOrEmpty(i.m_TexturePath) && CampaignWrappers.TryGetValue(camp, out w)) s_CampaignArt[Tex(i)] = Art(w.Key, 0.19f, 0.81f, w.Value);
+                }
+            }
+            Layer[] l;
+            return s_CampaignArt.TryGetValue(tex, out l) ? l : null;
+        }
+
         private static readonly Dictionary<string, Texture2D> s_PackBanners = new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -134,7 +171,7 @@ namespace HexRevival
         private static Texture2D PackBanner(AssetBundleManager m, AssetBundleFile bundle, string subBundle, string tex)
         {
             Layer[] layers;
-            if (!PackArt.TryGetValue(tex, out layers)) return null;
+            if (!PackArt.TryGetValue(tex, out layers) && (layers = CampaignArt(tex)) == null) return null;
             Texture2D b;
             if (s_PackBanners.TryGetValue(tex, out b) && b != null) return b;
             Texture2D[] src = new Texture2D[layers.Length];
@@ -327,10 +364,14 @@ namespace HexRevival
 
         // ---- Gift boxes ----
 
-        /// <summary>UIPremiumStoreItemContext(InventoryTreasureChest, StoreItem) (postfix): a gift box is no campaign pack.</summary>
+        /// <summary>
+        /// UIPremiumStoreItemContext(InventoryTreasureChest, StoreItem) (postfix): a gift box is no campaign pack. The
+        /// campaign packs (additional items) neither: the store marks them "Bonus chance!" and starts at 3 of them; the
+        /// mod's campaign packs have no bonus, and start at 1 as the other products.
+        /// </summary>
         public static void OnChestItem(UIPremiumStoreItemContext ctx, InventoryTreasureChest chest)
         {
-            if (ctx == null || SpecialPacks.KindOf(chest) != "giftbox") return;
+            if (ctx == null || (SpecialPacks.KindOf(chest) != "giftbox" && Loot.PackOf(chest) == null)) return;
             ctx.IsCampaignPack = false;
             ctx.Quantity = 1;
         }

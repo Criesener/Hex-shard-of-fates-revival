@@ -47,6 +47,69 @@ namespace HexRevival
             public int Price;
             public string Currency = "Gold";
             public string Tab = "";
+            /// <summary>A Full Set with the additional items: its PvE package, and the prices of its variants (VariantCount).</summary>
+            public InventoryItemData Pve;
+            public int[] VariantPrices;
+        }
+
+        // ------------------------------------------------------------------
+        // Full Set variants (user 2026-11-02): with the additional items, a Full Set's bundle buttons choose PvP (the
+        // Full Set), PvE (the set's PvE full set, PveFullSets) or both, once or x4, on two rows in place of 1, 3 or 10
+        // copies (StoreVariants). Without them, a Full Set sells by 1, 2 or 4 (FullSetQuantity).
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// The variants: 0 PvP, 1 PvE, 2 PvP+PvE, then the same x4 (3 to 5): 4 Full Sets, and the PvE package with 4
+        /// copies of its cards in place of 1 (its equipment, mercenaries and sleeves are unique: once either way).
+        /// </summary>
+        public const int VariantCount = 6;
+
+        /// <summary>A variant's Full Sets (PvP copies) and copies of the PvE package's cards.</summary>
+        public static int FullSetsOf(int variant) { return variant % 3 == 1 ? 0 : variant >= 3 ? 4 : 1; }
+        public static int PveCopiesOf(int variant) { return variant % 3 == 0 ? 0 : variant >= 3 ? 4 : 1; }
+
+        /// <summary>The variant chosen per Full Set item.</summary>
+        private static readonly Dictionary<ResourceId, int> s_Variant = new Dictionary<ResourceId, int>();
+
+        /// <summary>A Full Set sold with its variants: their prices (in the product's currency) and its PvE package.</summary>
+        public static bool Variants(InventoryItemData item, out int[] prices, out InventoryItemData pve)
+        {
+            prices = null; pve = null;
+            if (item == null) return false;
+            foreach (Product p in s_Products.Values)
+                if (p.Item == item && p.Pve != null) { prices = p.VariantPrices; pve = p.Pve; return true; }
+            return false;
+        }
+
+        public static int VariantOf(InventoryItemData item)
+        {
+            int v;
+            return item != null && s_Variant.TryGetValue(item.m_Id, out v) ? v : 0;
+        }
+
+        public static void SetVariant(InventoryItemData item, int v) { if (item != null) s_Variant[item.m_Id] = Mathf.Clamp(v, 0, VariantCount - 1); }
+
+        /// <summary>"Shards of Fate Full Set (PvE)".</summary>
+        public static string VariantName(InventoryItemData item, int v)
+        {
+            v = Mathf.Clamp(v, 0, VariantCount - 1);
+            string kind = Loc.Get(VariantKeys[v % 3]);
+            return Loc.Get("fullset_variant", item.m_Name.Trim(), v >= 3 ? Loc.Get("variant_x4", kind) : kind);
+        }
+
+        /// <summary>The variants' kinds (Loc keys), the x4 ones (3 to 5) as the first three.</summary>
+        public static readonly string[] VariantKeys = { "variant_pvp", "variant_pve", "variant_both" };
+
+        /// <summary>
+        /// The copies of a Full Set sold without the variants (user 2026-11-02): 1, 2 or 4, the game's 3 standing for 2
+        /// and its 10 for 4. Other products keep their quantity.
+        /// </summary>
+        public static int FullSetQuantity(InventoryItemData item, int quantity)
+        {
+            if (SpecialPacks.KindOf(item) != "fullset") return quantity;
+            int[] prices; InventoryItemData pve;
+            if (Variants(item, out prices, out pve)) return 1;
+            return quantity <= 1 ? 1 : quantity <= 3 ? 2 : 4;
         }
 
         private static readonly Dictionary<ulong, Product> s_Products = new Dictionary<ulong, Product>();
@@ -116,6 +179,51 @@ namespace HexRevival
         private static readonly int[] StardustGold = { 1000, 2000, 5000, 7000, 10000 };
         private static readonly ResourceId[] StardustKinds = { BuiltInResources.CommonStardust, BuiltInResources.UncommonStardust, BuiltInResources.RareStardust, BuiltInResources.LegendaryStardust, BuiltInResources.PromoStardust };
 
+        /// <summary>
+        /// PLACEHOLDER gold prices of the campaign packs (written as the other platinum-era prices). Zymmer (2026-11-02):
+        /// a campaign pack holds about half of a booster's "stuff", so half a booster's price to start with, the earlier
+        /// packs cheaper and the later ones dearer, in the order the campaign reaches them (Loot.CampaignPacks); then
+        /// halved (user 2026-11-02): from 300 (Howling Plains) to 700 (Ruins of Kukatan), 500 on average.
+        /// </summary>
+        private static int CampaignPackGold(string pack)
+        {
+            switch (pack)
+            {
+                case Loot.AZ1Pack: return 300;
+                case "Tranquil Dream": return 350;
+                case "Fort Romor": case "The Usurper": return 400;
+                case "Smoldering Dead": return 450;
+                case "Devonshire Keep": case Loot.AZ2Pack: return 500;
+                case "Brutecrown Bluff": return 550;
+                case "Great Machine Graveyard": return 600;
+                case "The Kraken": return 650;
+                default: return 700;   // Ruins of Kukatan
+            }
+        }
+
+        /// <summary>
+        /// Whether a campaign pack can be bought (user 2026-11-02): once a champion of this account has unlocked its area,
+        /// the zone for the zone packs, the dungeon's node on the zone's map for the dungeon packs (Dungeons' map nodes).
+        /// </summary>
+        public static bool CampaignPackUnlocked(string pack)
+        {
+            switch (pack)
+            {
+                case Loot.AZ1Pack: return Campaign.AnyChampionReached("AZ1", null);
+                case "Tranquil Dream": return Campaign.AnyChampionReached("AZ1", "Node040");
+                case "Fort Romor": return Campaign.AnyChampionReached("AZ1", "Node011");
+                case "The Usurper": return Campaign.AnyChampionReached("AZ1", "Node008");
+                case "Smoldering Dead": return Campaign.AnyChampionReached("AZ1", "Node024");
+                case "Devonshire Keep": return Campaign.AnyChampionReached("AZ1", "Node068");
+                case Loot.AZ2Pack: return Campaign.AnyChampionReached("AZ2", null);
+                case "Brutecrown Bluff": return Campaign.AnyChampionReached("AZ2", "Node002");
+                case "Great Machine Graveyard": return Campaign.AnyChampionReached("AZ2", "Node044");
+                case "The Kraken": return Campaign.AnyChampionReached("AZ2", "Node019");
+                case "Ruins of Kukatan": return Campaign.AnyChampionReached("AZ2", "Node040");
+                default: return true;
+            }
+        }
+
         /// <summary>PLACEHOLDER gold price of a Kismet's Reserve pack (2 PvE cards, 4 equipment and a mercenary, see Zymmer.KismetBundle).</summary>
         private const int KismetPackGold = 20000;
 
@@ -147,6 +255,15 @@ namespace HexRevival
                 if (p.Currency == "Gold" && item is InventoryStardust) p.Price = Gold(p.Price);
                 else if (p.Currency == "Gold" && !goldPrices) { p.Currency = "Platinum"; p.Price = PlatinumOf(p.Price); }
                 else if (p.Currency == "Gold") p.Price = GoldOfPlatinum(PlatinumOf(p.Price));
+                if (p.Pve != null)
+                {
+                    // The variants' prices, converted as the Full Set's (PvE: the PvE full set's price; x4: 4 times).
+                    int full = SpecialPacks.GoldPrice("fullset"), once = PveFullSets.GoldPrice;
+                    int[] raw = { full, once, full + once, 4 * full, 4 * once, 4 * (full + once) };
+                    p.VariantPrices = new int[VariantCount];
+                    for (int k = 0; k < VariantCount; k++)
+                        p.VariantPrices[k] = p.Currency == "Platinum" ? PlatinumOf(raw[k]) : GoldOfPlatinum(PlatinumOf(raw[k]));
+                }
                 StoreItem s = new StoreItem();
                 s.id = (ulong)(s_Items.Count + 1);
                 s.TemplateId = item.m_Id;
@@ -166,6 +283,16 @@ namespace HexRevival
                 s_Items.Add(s);
                 s_Products[s.id] = p;
             }
+            // The campaign packs after the other packs, in the order the campaign reaches them.
+            Func<StoreItem, int> campOrder = i =>
+            {
+                Product pr;
+                string camp = s_Products.TryGetValue(i.id, out pr) ? Loot.PackOf(pr.Item) : null;
+                return camp != null ? Array.IndexOf(Loot.CampaignPacks, camp) : -1;
+            };
+            List<StoreItem> camps = s_Items.Where(i => campOrder(i) >= 0).OrderBy(campOrder).ToList();
+            s_Items.RemoveAll(i => camps.Contains(i));
+            s_Items.AddRange(camps);
             // The stardust store lists them in catalog order: by rarity.
             List<StoreItem> dust = s_Items.Where(i => Array.IndexOf(StardustKinds, i.TemplateId) >= 0).OrderBy(i => Array.IndexOf(StardustKinds, i.TemplateId)).ToList();
             s_Items.RemoveAll(i => dust.Contains(i));
@@ -197,8 +324,13 @@ namespace HexRevival
                 return k < 0 ? null : new Product { Item = item, Price = StardustGold[k], Tab = "stardust" };
             }
             string special = SpecialPacks.KindOf(item);
-            // A PvE full set (an account option): next to the set's Full Set.
-            if (special == "pvefullset") return PveFullSets.Enabled ? new Product { Item = item, Price = PveFullSets.GoldPrice, Tab = "cardpack" } : null;
+            // A PvE full set: no product of its own, a variant of the set's Full Set (see Variants).
+            if (special == "pvefullset") return null;
+            if (special == "fullset")
+                return new Product { Item = item, Price = SpecialPacks.GoldPrice(special), Tab = "cardpack", Pve = PveFullSets.ForFullSet(item) };
+            // The campaign packs (additional items; Zymmer's proposal 2026-11-02): see CampaignPackGold.
+            string camp = Loot.PackOf(item);
+            if (camp != null) return ExtraItems ? new Product { Item = item, Price = CampaignPackGold(camp), Tab = "cardpack" } : null;
             // The holiday gift boxes came with opened boosters (Packs); they are products only with the additional items.
             if (special == "giftbox") return ExtraItems ? new Product { Item = item, Price = SpecialPacks.GiftBoxGold, Tab = "special" } : null;
             if (special != null) return new Product { Item = item, Price = SpecialPacks.GoldPrice(special), Tab = special == "common" || special == "fullset" ? "cardpack" : "special" };
@@ -246,16 +378,28 @@ namespace HexRevival
             Product p;
             s_Products.TryGetValue(id, out p);
             quantity = Math.Max(1, quantity);
+            if (p != null) quantity = FullSetQuantity(p.Item, quantity);
             string currency = p != null ? p.Currency : "Gold";
             r.TransactionCurrencyType = currency;
-            long cost = p != null ? (long)p.Price * quantity : 0;
+            int variant = p != null && p.Pve != null ? VariantOf(p.Item) : 0;
+            long cost = p != null ? (long)(p.Pve != null ? p.VariantPrices[variant] : p.Price) * quantity : 0;
+            string camp = p != null ? Loot.PackOf(p.Item) : null;
             if (p == null || Saves.Current == null) SetError(r, "TransactionFailed");
+            else if (camp != null && !CampaignPackUnlocked(camp))
+            {
+                SetError(r, "TransactionFailed");
+                Notices.Show(Loc.Get("store_pack_locked"));
+            }
             else if (!Pay(currency, cost)) SetError(r, currency == "Gold" ? "InsufficientGold" : "InsufficientCurrency");   // not InsufficientPlatinum: the client offers to buy platinum
             else
             {
                 try
                 {
-                    for (int i = 0; i < quantity; i++) Deliver(p.Item, r);
+                    for (int i = 0; i < quantity; i++)
+                    {
+                        for (int k = 0; k < FullSetsOf(variant); k++) Deliver(p.Item, r);
+                        if (PveCopiesOf(variant) > 0) PveFullSets.Deliver(PveFullSets.SetOf(p.Pve), r, PveCopiesOf(variant));
+                    }
                     Debug.Log("[HexRevival] [Store] bought " + quantity + " x " + p.Item.m_Name + " for " + cost + " " + currency);
                 }
                 catch (Exception e)
@@ -333,6 +477,14 @@ namespace HexRevival
                     if (!Sleeves.Owned(id)) { inventory_bits sb = Inventory.GrantSilently(id); if (sb != null) r.GrantedInventory.Add(sb); }
                 return;
             }
+            string camp = Loot.PackOf(item);
+            if (camp != null)
+            {
+                // A campaign pack, unopened (opened later as the ones the campaign gives, Packs.GiveCampaignPack).
+                inventory_bits bought = Packs.GiveCampaignPack(camp);
+                if (bought != null) { Packs.ShowChest(bought.Id); Notices.Show(Loc.Get("store_pack_bought", item.m_Name.Trim())); }
+                return;
+            }
             if (SpecialPacks.KindOf(item) == "giftbox")
             {
                 // A bought gift box: opened at once, as the other special products (its holiday's sleeve and equipment).
@@ -353,7 +505,7 @@ namespace HexRevival
                 return;
             }
             CardSetTemplate pveSet = PveFullSets.SetOf(item);
-            if (pveSet != null) { PveFullSets.Deliver(pveSet, r); return; }
+            if (pveSet != null) { PveFullSets.Deliver(pveSet, r, Collection.CopiesPerCard); return; }
             if (SpecialPacks.Deliver(item, r)) return;
             InventoryCardPack pack = item as InventoryCardPack;
             if (pack != null)

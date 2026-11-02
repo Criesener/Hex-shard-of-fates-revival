@@ -934,6 +934,21 @@ namespace HexRevival
         private static CampState GetChamp(ulong champ, bool create) { return Get(CurrentZone(champ).Base + champ, create); }
 
         /// <summary>
+        /// Whether a champion of this save has unlocked a place: a zone ("AZ1", "AZ2") once its campaign is started, or a
+        /// node of that zone's map once it is shown on the map (Visible) or done. Used for the store's campaign packs.
+        /// </summary>
+        public static bool AnyChampionReached(string zone, string node)
+        {
+            LoadAll();
+            foreach (CampState st in s_States.Values)
+            {
+                if (st.Z.Key != zone) continue;
+                if (node == null ? st.Started || st.Completed.Count > 0 : st.Visible.Contains(node) || st.Completed.Contains(node)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// A node and its neighbours become visible (and selectable). A path fork ("Fork001": a junction of the
         /// map's paths, not a location) is passed through: the locations beyond it are neighbours too. Without
         /// this, Razortooth Forest (Node014, the Savage Lord), reached only through Fork001 from the Zila bridge,

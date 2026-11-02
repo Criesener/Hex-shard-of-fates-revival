@@ -58,8 +58,10 @@ and rebuilds locally what the server used to do: game rules, AI opponent, your c
   down into gems and parts, and missing ones are crafted from them and stardust. Stardust also unlocks a card's
   extended art.
 - **Additional items in the store** (an account option, off by default): the store also sells what the original one
-  did not. For now: a PvE full set per set (its PvE cards, 4 copies, its chest and Wheel of Fate equipment, its six
-  mercenaries and its six sleeves), for players who would rather not open and spin chests, and the holiday gift boxes.
+  did not. For now: each Full Set as PvP, PvE (its PvE cards, its chest and Wheel of Fate equipment, its six
+  mercenaries and its six sleeves, for players who would rather not open and spin chests) or both, once or x4, the
+  campaign packs (Howling Plains to Ruins of Kukatan, once a champion has unlocked their area), and the holiday gift
+  boxes. Without the option, Full Sets sell by 1, 2 or 4.
 - **Account levels**: their rewards are claimed on the game's account panel (click the XP bar), packs as packs.
 - **Full collection**: every card (4 copies, unlimited basic shards) and every equipment, or a
   progression account that earns its cards by playing.

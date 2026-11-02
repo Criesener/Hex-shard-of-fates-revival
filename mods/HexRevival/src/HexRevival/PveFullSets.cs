@@ -14,7 +14,8 @@ namespace HexRevival
     /// PvE full sets (an "additional items in the store" product, Store.ExtraItems; Criesener's idea, user 2026-11-02): next to each set's Full Set
     /// (one of every PvP card), a store package with everything of the set's PvE side that otherwise comes from its
     /// chests and Wheel of Fate, for players who would rather not open and spin chests:
-    /// - the set's PvE cards (its "Set N Chest Loot" and "Set N Wheels of Fate" cards, Src.Zymmer), up to 4 copies each;
+    /// - the set's PvE cards (its "Set N Chest Loot" and "Set N Wheels of Fate" cards, Src.Zymmer), one copy each (4 for
+    ///   the x4 variants, Store.PveCopiesOf), never beyond 4 owned;
     /// - every piece of its chest and wheel equipment (Src.Zymmer), the ones not owned yet;
     /// - its six mercenaries, three from the chests and three from the wheel (Mercenaries.OfSet), not owned yet;
     /// - its sleeves "Found in Chests for [set]" and "Found in the Wheels of Fate for [set]" (Src.HexCodex), not owned yet.
@@ -39,6 +40,17 @@ namespace HexRevival
         {
             CardSetTemplate s;
             return item != null && s_Sets.TryGetValue(item.m_Id, out s) ? s : null;
+        }
+
+        /// <summary>The package of a set's Full Set item (null: none, or the option is off).</summary>
+        public static InventoryItemData ForFullSet(InventoryItemData fullSet)
+        {
+            InventoryCardPack p = fullSet as InventoryCardPack;
+            CardSetTemplate set;
+            if (!Enabled || p == null || p.m_CardPackType != ECardPackType.FullSet || s_Sets.ContainsKey(p.m_Id)
+                || !Singleton<TemplateManager>.Instance.CardSets.TryGetValue(p.m_SetId, out set) || set == null) return null;
+            ResourceId id = IdFor(set);
+            return s_Sets.ContainsKey(id) ? Singleton<TemplateManager>.Instance.InventoryItems[id] : null;
         }
 
         /// <summary>
@@ -159,13 +171,16 @@ namespace HexRevival
             return Cards(set).Count + Equipment(set).Count + Mercs(set).Count + SetSleeves(set).Count;
         }
 
-        /// <summary>A bought package: everything not owned yet into the purchase answer (the store's loot window shows it).</summary>
-        public static void Deliver(CardSetTemplate set, PurchaseItemResponse r)
+        /// <summary>
+        /// A bought package into the purchase answer (the store's loot window shows it): copies of each card (never beyond
+        /// 4 owned), the other items not owned yet.
+        /// </summary>
+        public static void Deliver(CardSetTemplate set, PurchaseItemResponse r, int copies)
         {
             int cards = 0, items = 0, mercs = 0;
             foreach (CardTemplate t in Cards(set))
             {
-                int missing = Collection.CopiesPerCard - Collection.Count(t.m_Id);
+                int missing = Math.Min(copies, Collection.CopiesPerCard - Collection.Count(t.m_Id));
                 if (missing <= 0) continue;
                 r.GrantedCards.AddRange(Collection.GrantSilently(t.m_Id, missing));
                 cards += missing;
