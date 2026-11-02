@@ -192,6 +192,7 @@ namespace HexRevival
                 request("DoArenaCashOut", new[] { ad, handler("DoArenaCashOut"), typeof(string), typeof(int), svc }, "Arena_CashOut");
                 request("DestroyArenaData", new[] { typeof(ulong), handler("DestroyArenaData"), typeof(string), typeof(int), svc }, "Arena_Destroy");
                 request("RefreshArenaInfo", new[] { ad, af, ac, handler("RefreshArenaInfo"), typeof(string), typeof(int), svc }, "Arena_Refresh");
+                request("BuyoutArena", new[] { ad, af, ac, handler("BuyoutArena"), typeof(string), typeof(int), svc }, "Arena_Buyout");
                 apply("AssetBundleManager.GetAsset", () => harmony.Patch(AccessTools.Method(typeof(AssetBundleManager), "GetAsset", new[] { typeof(AssetBundleFile), typeof(string), typeof(string), typeof(AssetType) }), postfix: new HarmonyMethod(typeof(Hooks), "Icons_GetAsset")));
                 apply("UIArenaCampaignContext.AssignChampionHUD", () => harmony.Patch(AccessTools.Method(typeof(UIArenaCampaignContext), "AssignChampionHUD"), postfix: new HarmonyMethod(typeof(Hooks), "Arena_ChampionHud")));
                 apply("UIArenaCampaignViewModel.Start", () => harmony.Patch(AccessTools.Method(typeof(UIArenaCampaignViewModel), "Start"), postfix: new HarmonyMethod(typeof(Hooks), "Arena_Start")));
@@ -595,6 +596,7 @@ namespace HexRevival
         public static bool Arena_CashOut(Game.Client.Network.Campaign.CampaignService.DoArenaCashOut.ResponseHandler __1) { Arena.CashOut(__1); return false; }
         public static bool Arena_Destroy(Game.Client.Network.Campaign.CampaignService.DestroyArenaData.ResponseHandler __1) { Arena.Destroy(__1); return false; }
         public static bool Arena_Refresh(Game.Client.Network.Campaign.CampaignService.RefreshArenaInfo.ResponseHandler __3) { Arena.Refresh(__3); return false; }
+        public static bool Arena_Buyout(Game.Client.Network.Campaign.CampaignService.BuyoutArena.ResponseHandler __3) { Arena.Buyout(__3); return false; }
         public static void Arena_Start(UIArenaCampaignViewModel __instance) { Arena.OnScreenStart(__instance); }
         public static void Icons_GetAsset(AssetBundleManager __instance, AssetBundleFile __0, string __1, string __2, AssetType __3, ref UnityEngine.Object __result) { if (__result == null || StoreIcons.IsPlaceholder(__0, __2)) { UnityEngine.Object r = StoreIcons.Missing(__instance, __0, __1, __2, __3); if (r != null) __result = r; } }
         public static void Arena_ChampionHud(UIArenaCampaignContext __instance, DeckCache __0) { Arena.OnAssignChampionHud(__instance, __0); }

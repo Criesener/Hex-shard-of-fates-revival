@@ -22,8 +22,8 @@ namespace HexRevival
     /// A run (Src.HexCompendium, "Frost Ring Arena"; the client's screens): 20 fights in 4 tiers of 5, a boss closing
     /// each tier; tier 1: 4 standard fights; tier 2: 3 standard, 1 elite; tiers 3 and 4: 2 standard, 2 elite, tier 4's
     /// boss an elite. Loss marks and challenges: see OnGameEnded. The opponents come from the account's opponent pack
-    /// (arena tiers, see Opponents): by default the game's own "Arena_" decks. Rewards: see Rewards. Not done: the
-    /// buyout, Hogarth's dialogues.
+    /// (arena tiers, see Opponents): by default the game's own "Arena_" decks. Rewards: see Rewards. The client's
+    /// "Skip Tier 1" button: see Buyout. Not done: Hogarth's dialogues.
     /// </summary>
     public static class Arena
     {
@@ -211,6 +211,7 @@ namespace HexRevival
         {
             // A notification flag left on by a window of a previous visit would queue every later window (the
             // cash out among them) forever; the loot to show is kept in the client's own loot list.
+            RefreshFlags(GameClient.Instance.PlayerProfile);
             ArenaClient client = Singleton<ArenaClient>.Instance;
             client.m_UINotificationActive = false;
             client.m_UINotificationQueue.Clear();
@@ -256,6 +257,57 @@ namespace HexRevival
                 res.FightHistory = r.Fights;
             }
             LocalServer.Answer(typeof(CampaignService.RefreshArenaInfo), res, handler);
+        }
+
+        // ------------------------------------------------------------------
+        // Skip Tier 1 (the client's buyout)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Src.Game: the arena screen shows its "Skip Tier 1" button (UIArenaCampaignViewModel.SetBuyoutButton) when the
+        /// account has the flag ARENA_TIER1_PERFECT and the run is not a buyout already, has no win and no loss, and its
+        /// fight is in tier 1. Its confirmation (ArenaPVE_Buyout_Confirm_Body): "Are you sure you want to skip the Tier 1
+        /// battles? You will not receive rewards for battles skipped this way." No price. The client shows the skipped
+        /// fights as "SKIP" (UIArenaTierGroupContext). The flag is earned by winning tier 1 without a loss (its name: when
+        /// exactly the original servers set it is not known otherwise). Also noted by hex-server (IanUtley/hex-server).
+        /// </summary>
+        private const string Tier1PerfectFlag = "ARENA_TIER1_PERFECT", Tier1PerfectClaim = "arena:tier1perfect";
+
+        private static bool HasTier1Perfect { get { return Saves.Current != null && Saves.Current.Claims.Contains(Tier1PerfectClaim); } }
+
+        /// <summary>Login and arena screen: the account's arena flag to the client.</summary>
+        public static void RefreshFlags(PlayerProfile profile)
+        {
+            if (profile == null || !HasTier1Perfect) return;
+            try { profile.UpdateSingleUserFlag(new Reckoning.Profile.Messages.FlagData { Name = Tier1PerfectFlag, Progress = 1, Maximum = 1, Completed = true }); }
+            catch (Exception e) { Debug.LogWarning("[HexRevival] [Arena] flag: " + e.Message); }
+        }
+
+        /// <summary>CampaignService.BuyoutArena: the run's tier 1 fights are skipped, without their rewards.</summary>
+        public static void Buyout(Delegate handler)
+        {
+            Run r = Current;
+            BuyoutArenaResponse res = LocalServer.Ok<BuyoutArenaResponse>();
+            res.ErrorMessage = "";
+            bool ok = r != null && HasTier1Perfect && !r.Info.IsBuyout && r.Info.Wins == 0 && r.Info.Loses == 0 && r.Current < PerTier;
+            if (ok)
+            {
+                for (int i = 0; i < PerTier; i++) r.Fights[i].FightResults = "SKIP";
+                r.Current = PerTier;
+                r.Info.IsBuyout = true;
+                r.Info.FightId = r.Fights[r.Current].FightID;
+                Save();
+            }
+            res.Success = ok;
+            if (r != null)
+            {
+                res.ArenaInfo = r.Info;
+                res.EncounterData = r.Fights[r.Current];
+                res.ChallengerData = ChallengerOf(r, r.Current);
+                res.FightHistory = r.Fights;
+            }
+            Debug.Log("[HexRevival] [Arena] skip tier 1: " + (ok ? "done" : "refused"));
+            LocalServer.Answer(typeof(CampaignService.BuyoutArena), res, handler);
         }
 
         public static void MasterList(Delegate handler)
@@ -424,6 +476,12 @@ namespace HexRevival
                 // "Remove strikes by Perfecting a Tier, or completing Hogarth's Challenges" (Src.HexCodex, the arena's
                 // own text): a tier won without a loss takes off a boss's loss mark (the only marks left by then).
                 if (boss && (r.Info.LastTierLoss & (1 << f.FightTier)) == 0 && r.BossLosses > 0) r.BossLosses--;
+                // Tier 1 won without a loss: the account's ARENA_TIER1_PERFECT flag (see Buyout).
+                if (boss && f.FightTier == 1 && (r.Info.LastTierLoss & (1 << 1)) == 0 && Saves.Current != null && Saves.Current.Claims.Add(Tier1PerfectClaim))
+                {
+                    Saves.SaveCurrent();
+                    RefreshFlags(GameClient.Instance.PlayerProfile);
+                }
                 if (boss) { r.TierLosses = 0; r.Buffs.Clear(); r.BonusChest = false; }
                 if (r.Current < Fights - 1) r.Current++;
             }
@@ -775,6 +833,12 @@ namespace HexRevival
             Run r = Current;
             switch (sub)
             {
+                case "tier1perfect":   // dev: the account's ARENA_TIER1_PERFECT flag, as if tier 1 had been won without a loss
+                    if (Saves.Current == null) return "no account";
+                    Saves.Current.Claims.Add(Tier1PerfectClaim);
+                    Saves.SaveCurrent();
+                    RefreshFlags(GameClient.Instance.PlayerProfile);
+                    return "ARENA_TIER1_PERFECT set: the arena screen shows \"Skip Tier 1\" on a new run (no win, no loss yet)";
                 case "decks":   // dev: the game's arena decks: champion, health, equipment count, and the challenge cards found
                     {
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();

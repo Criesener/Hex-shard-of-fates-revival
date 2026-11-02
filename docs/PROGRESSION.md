@@ -547,7 +547,12 @@ the end, and single fights).
 | Opponents' equipment | "Tier 1: Champions in this Tier each use no equipment. Tier 2: [...] 2 equipment", 3 in tier 3, 4 in tier 4; pieces that modify cards of the opponent's deck (the cards' own equipment lists), one per slot, drawn once per run and fight | HexCodex (the arena's text); which pieces PLACEHOLDER (the game's arena decks carry none) |
 | Resource buff | 1 temporary resource (for the first turn) and 1 permanent resource | HexCodex |
 
-Not done: the buyout, Hogarth's dialogues, Hogarth's challenge window (the client's is the consoles' one, without
+**Skip Tier 1** (Game: the client's buyout button, UIArenaCampaignViewModel.SetBuyoutButton, and its texts): shown on
+a new run (no win, no loss, fight in tier 1) once the account has the flag ARENA_TIER1_PERFECT, earned here by winning
+tier 1 without a loss (the flag's name; when the original servers set it is not known otherwise). Confirming skips the
+five tier 1 fights ("SKIP" on the grid) "You will not receive rewards for battles skipped this way"; no price.
+
+Not done: Hogarth's dialogues, Hogarth's challenge window (the client's is the consoles' one, without
 buttons on PC: a challenge is told at the start of its fight), the challenges that change every card's values (Swarm!
 Swarm!, Rage, Charge!) or play an action for free (The Primal of Luck, Infernal Professor).
 
