@@ -1908,6 +1908,10 @@ namespace HexRevival
         private static CardTemplate EffectCard(string name)
         {
             TemplateManager tm = Singleton<TemplateManager>.Instance;
+            // A card template id (Fort Romor's defences, AI Only Cards).
+            CardTemplate byId;
+            try { if (name.Length == 36 && tm.Cards.TryGetValue(new ResourceId(name), out byId) && byId != null) return byId; }
+            catch (Exception) { }
             foreach (CardTemplate t in tm.Cards.Values)
             {
                 CardSetTemplate set;

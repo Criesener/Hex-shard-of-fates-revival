@@ -349,6 +349,33 @@ namespace HexRevival
             return s;
         }
 
+        /// <summary>
+        /// Fort Romor's defences: each room taken gives the Defense battles a "Choose ..." card (AI Only Cards, "Each
+        /// opposing champion summons a ..."), offered on the battle panel ("CHOOSE A CARD TO BE USED IN YOUR NEXT
+        /// BATTLE", client LocationType.ModChoiceEncounter). Src.Video: Vandersveldt part 68 (before Lord Benjamin:
+        /// Sniper Tower, Hellshot Catapult, Castle Wall) and 69 (before Lord Alexander, the Sniper Tower used in the won
+        /// battle is gone). Src.Game: the rooms' Success conversations (Stables: the catapult's pieces; Barracks: the
+        /// armory's bows; Command Post: the wall, the third one).
+        /// </summary>
+        private static readonly string[][] Defences =
+        {
+            new[] { "NodeB", "ddf2923e-5b21-464e-9709-a8ea992cb818" },   // Stables -> Choose Hellshot Catapult
+            new[] { "NodeC", "e1039036-fbc8-410b-a16f-372b99bdb1d4" },   // Barracks -> Choose Sniper Tower
+            new[] { "NodeD", "6ce8a874-1469-43fa-a7f0-7174a985d389" },   // Command Post -> Choose Castle Wall
+        };
+
+        private const string DefenceList = "fortromor_defences";
+
+        /// <summary>The defence cards the champion can choose from now (rooms taken, not used in a won battle yet).</summary>
+        private static List<object> DefencesLeft(Run r)
+        {
+            List<object> res = new List<object>();
+            if (r.Key != "fortromor") return res;
+            foreach (string[] d in Defences)
+                if (Cleared(r, d[0]) && !r.Vars.ContainsKey("defused:" + d[1])) res.Add(d[1]);
+            return res;
+        }
+
         private static Step Defense(string lord, int n)
         {
             string c = "Fort Romor - Defense of Fort Romor (" + lord + ")";
@@ -824,6 +851,12 @@ namespace HexRevival
                         // Battle (after its conversation, it starts by itself).
                         l["type"] = "Encounter";
                         l["encounter"] = enc;
+                        if (r.Key == "fortromor" && n == "NodeE" && DefencesLeft(r).Count > 0)
+                        {
+                            // Battle panel with the defence cards to choose from (the list is in the public state).
+                            l["type"] = "ModChoiceEncounter";
+                            l["modlistId"] = "/" + DefenceList;
+                        }
                         l["autostart"] = conv != null || step > 0;
                         Dictionary<string, object> ed = new Dictionary<string, object>();
                         ed["encscene"] = enc;
@@ -843,6 +876,7 @@ namespace HexRevival
             pub["visited_nodes"] = new List<object>(r.VisitedNodes.ToArray());
             pub["visited_paths"] = new List<object>(r.VisitedPaths.ToArray());
             pub["quest_nodes"] = new List<object>();
+            if (r.Key == "fortromor") pub[DefenceList] = DefencesLeft(r);
             // Castle Crayburn (Src.Game "/IsStarterDungeon"): no back button (it would abandon the run:
             // there is no map to go back to yet) and no deck editing. The home button keeps the run.
             if (d.Starter) pub["IsStarterDungeon"] = true;
@@ -966,7 +1000,13 @@ namespace HexRevival
             string arg0 = args != null && args.Length > 0 && args[0] != null ? args[0].ToString() : null;
             if (evt != "visit_path") Debug.Log("[HexRevival] [Dungeons] event " + evt + (arg0 != null ? " " + arg0 : "") + " in " + r.ALoc);
             string room = r.ALoc;
-            if (evt == "start") Campaign.NoteStartArgs(args);
+            if (evt == "start")
+            {
+                Campaign.NoteStartArgs(args);
+                // Fort Romor: the defence card chosen on the battle panel (first argument, a card template id).
+                r.Vars.Remove("defence");
+                if (arg0 != null && DefencesLeft(r).Contains(arg0)) r.Vars["defence"] = arg0;
+            }
             switch (evt)
             {
                 case "visit_node":
@@ -1127,6 +1167,8 @@ namespace HexRevival
         {
             List<string> res = new List<string>();
             foreach (KeyValuePair<string, string> kv in r.Vars) if (kv.Key.StartsWith("fx:")) res.Add(kv.Key.Substring(3));
+            string defence;
+            if (r.Vars.TryGetValue("defence", out defence)) res.Add(defence);   // Fort Romor (card template id)
             if (r.Def.Key == "machinegraveyard" && Cleared(r, "NodeH"))
             {
                 List<string> w = new List<string>();
@@ -1158,6 +1200,14 @@ namespace HexRevival
             Debug.Log("[HexRevival] [Dungeons] battle " + room + (won ? " won" : " lost"));
             r.Seen.Remove(room + ":" + Done(r, room));
             r.Vars.Remove("choice:" + room);
+            // Fort Romor: a defence used in a won battle is gone (Src.Video, Vandersveldt part 69). After a lost battle
+            // it stays (not seen: PLACEHOLDER).
+            string defence;
+            if (r.Vars.TryGetValue("defence", out defence))
+            {
+                r.Vars.Remove("defence");
+                if (won) r.Vars["defused:" + defence] = "1";
+            }
             string enc = b.Enc;
             if (won)
             {
