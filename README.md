@@ -59,8 +59,9 @@ and rebuilds locally what the server used to do: game rules, AI opponent, your c
   extended art.
 - **Additional items in the store** (an account option, off by default): the store also sells what the original one
   did not. For now: each Full Set as PvP, PvE (its PvE cards, 4 copies, its chest and Wheel of Fate equipment, its six
-  mercenaries and its six sleeves, for players who would rather not open and spin chests) or both, the campaign packs
-  (Howling Plains to Ruins of Kukatan), and the holiday gift boxes.
+  mercenaries and its six sleeves, for players who would rather not open and spin chests), both, or both with 4 Full
+  Sets, the campaign packs (Howling Plains to Ruins of Kukatan, once a champion has unlocked their area), and the
+  holiday gift boxes. Without the option, Full Sets sell by 1 or 4.
 - **Account levels**: their rewards are claimed on the game's account panel (click the XP bar), packs as packs.
 - **Full collection**: every card (4 copies, unlimited basic shards) and every equipment, or a
   progression account that earns its cards by playing.

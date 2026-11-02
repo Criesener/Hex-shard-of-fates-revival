@@ -205,6 +205,7 @@ namespace HexRevival
                 apply("UILandingPageViewModel.Awake", () => harmony.Patch(AccessTools.Method(typeof(UILandingPageViewModel), "Awake"), postfix: new HarmonyMethod(typeof(Hooks), "Landing_Awake")));
                 apply("UIPremiumStoreItemContext..ctor(pack)", () => harmony.Patch(AccessTools.Constructor(typeof(UIPremiumStoreItemContext), new[] { typeof(Reckoning.Game.InventoryCardPack), typeof(Game.Shared.StoreItem) }), postfix: new HarmonyMethod(typeof(Hooks), "Store_PackItem")));
                 apply("UIPremiumStoreItemContext..ctor(chest)", () => harmony.Patch(AccessTools.Constructor(typeof(UIPremiumStoreItemContext), new[] { typeof(Reckoning.Game.InventoryTreasureChest), typeof(Game.Shared.StoreItem) }), postfix: new HarmonyMethod(typeof(Hooks), "Store_ChestItem")));
+                apply("UIPremiumStoreViewModel.SetQuantity", () => harmony.Patch(AccessTools.Method(typeof(UIPremiumStoreViewModel), "SetQuantity", new[] { typeof(int) }), prefix: new HarmonyMethod(typeof(Hooks), "Store_SetQuantity")));
                 apply("StoreItem3DController.OnAssetBundleObjectLoaded", () => harmony.Patch(AccessTools.Method(typeof(StoreItem3DController), "OnAssetBundleObjectLoaded"), postfix: new HarmonyMethod(typeof(Hooks), "Store_3DLoaded")));
                 apply("DuelingPitVM.FindMatch", () => Prefix(harmony, typeof(DuelingPitVM), "FindMatch", Type.EmptyTypes, "DuelingPit_FindMatch"));
                 // The buffs' conversations were the server's: clicking a buff shows nothing (its text is in its tooltip).
@@ -608,6 +609,7 @@ namespace HexRevival
         public static void Landing_Awake(UILandingPageViewModel __instance) { Community.OnLandingAwake(__instance); }
         public static void Store_PackItem(UIPremiumStoreItemContext __instance, Reckoning.Game.InventoryCardPack __0) { StoreIcons.OnPackItem(__instance, __0); }
         public static void Store_ChestItem(UIPremiumStoreItemContext __instance, Reckoning.Game.InventoryTreasureChest __0) { StoreIcons.OnChestItem(__instance, __0); }
+        public static void Store_SetQuantity(UIPremiumStoreViewModel __instance, ref int __0) { __0 = StoreVariants.MapQuantity(__instance, __0); }
         public static void Store_3DLoaded(StoreItem3DController __instance) { StoreIcons.On3DItemLoaded(__instance); }
         public static bool DuelingPit_FindMatch(DuelingPitVM __instance) { return DuelingPit.FindMatch(__instance); }
 

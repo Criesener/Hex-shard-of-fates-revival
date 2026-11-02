@@ -261,7 +261,11 @@ namespace HexRevival
             m_BarRect = bar;
             if (!GameSkin.Sprite(bar, "A_Shared_Atlas", "Dropdown_Panel")) GUI.DrawTexture(bar, GameSkin.Solid(new Color(0.05f, 0.06f, 0.09f, 0.9f)));
             Rect details = new Rect(bar.xMax - bw - 4 * S, bar.y + 2 * S, bw, h - 4 * S);
-            GameSkin.Label(new Rect(bar.x + 12 * S, bar.y, details.x - bar.x - 16 * S, h), Stats(c), GameSkin.Style("bold", 15, GameSkin.Gold, TextAnchor.MiddleCenter));
+            // A campaign pack whose area no champion has unlocked yet: not sold (Store.CampaignPackUnlocked), said here.
+            string camp = Loot.PackOf(item);
+            bool locked = camp != null && !Store.CampaignPackUnlocked(camp);
+            GameSkin.Label(new Rect(bar.x + 12 * S, bar.y, details.x - bar.x - 16 * S, h), locked ? Loc.Get("store_pack_locked") : Stats(c),
+                GameSkin.Style("bold", 15, locked ? new Color(0.95f, 0.45f, 0.35f) : GameSkin.Gold, TextAnchor.MiddleCenter));
             if (GameSkin.GoldButton(details, Loc.Get("pc_details"), true, 14)) Show(item, c);
         }
 
@@ -822,7 +826,7 @@ namespace HexRevival
             {
                 int v = Store.VariantOf(item);
                 if (v == 1) return Describe(pve, null);
-                if (v == 2) return Describe(item, pve);
+                if (v >= 2) return Describe(item, pve);   // PvP+PvE, also x4 (the same things, 4 Full Sets)
             }
             return Describe(item, null);
         }
